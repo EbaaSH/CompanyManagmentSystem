@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'traccer' => [
+        'url' => env('TRACCER_SMS_URL'),
+        'key' => env('TRACCER_SMS_API_KEY'),
+    ],
+
 ];

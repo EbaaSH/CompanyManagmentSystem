@@ -10,6 +10,13 @@ use Spatie\Permission\Models\Role;
 
 class AuthService
 {
+    private OTPService $otpService;
+
+    public function __construct(OTPService $otpService)
+    {
+        $this->otpService = $otpService;
+    }
+
     /**
      * Get the token array structure.
      *
@@ -43,6 +50,8 @@ class AuthService
 
         $role = Role::findByName($request->role ?? 'user');
         $user->assignRole($role);
+
+        $this->otpService->sendOtp($user->phone);
 
         $token = JWTAuth::fromUser($user);
 
@@ -92,9 +101,9 @@ class AuthService
      */
     public function logout()
     {
-        JWTAuth::logout();
+        $logout = auth()->logout();
 
-        return ['data' => null, 'message' => 'Successfully logged out', 'code' => 200];
+        return ['data' => $logout, 'message' => 'Successfully logged out', 'code' => 200];
     }
 
     /**
@@ -104,12 +113,11 @@ class AuthService
      */
     public function refresh()
     {
-        try {
-            $refreshedToken = JWTAuth::refresh();
-
-            return ['data' => $this->respondWithToken($refreshedToken), 'message' => 'Token refreshed successfully', 'code' => 200];
-        } catch (\Exception $e) {
-            return ['data' => null, 'message' => 'Unable to refresh token', 'code' => 401];
+        $refresh = auth()->refresh();
+        if ($refresh) {
+            return ['data' => $this->respondWithToken($refresh), 'message' => 'refresh token suceess', 'code' => 200];
         }
+
+        return ['data' => null, 'message' => 'Unable to refresh token', 'code' => 401];
     }
 }

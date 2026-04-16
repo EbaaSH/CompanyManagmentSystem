@@ -45,7 +45,61 @@ class AuthController extends Controller
         try {
 
             $data = $this->authService->login($request);
-            if ($data['code'] == 201) {
+            if ($data['code'] == 200) {
+                return Response::Success($data['data'], $data['message'], $data['code']);
+            }
+
+            return Response::Error($data['data'], $data['message'], $data['code']);
+        } catch (Throwable $th) {
+            $message = $th->getMessage();
+
+            return Response::Error($data, $message);
+        }
+    }
+
+    public function logout()
+    {
+        $data = [];
+        try {
+
+            $data = $this->authService->Logout();
+            if ($data['code'] == 200) {
+                return Response::Success($data['data'], $data['message'], $data['code']);
+            }
+
+            return Response::Error($data['data'], $data['message'], $data['code']);
+        } catch (Throwable $th) {
+            $message = $th->getMessage();
+
+            return Response::Error($data, $message);
+        }
+    }
+
+    public function me()
+    {
+        $data = [];
+        try {
+
+            $data = $this->authService->me();
+            if ($data['code'] == 200) {
+                return Response::Success($data['data'], $data['message'], $data['code']);
+            }
+
+            return Response::Error($data['data'], $data['message'], $data['code']);
+        } catch (Throwable $th) {
+            $message = $th->getMessage();
+
+            return Response::Error($data, $message);
+        }
+    }
+
+    public function refresh()
+    {
+        $data = [];
+        try {
+
+            $data = $this->authService->refresh();
+            if ($data['code'] == 200) {
                 return Response::Success($data['data'], $data['message'], $data['code']);
             }
 
