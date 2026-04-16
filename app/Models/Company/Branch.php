@@ -2,6 +2,9 @@
 
 namespace App\Models\Company;
 
+use App\Models\Driver\DriverProfile;
+use App\Models\Employee\EmployeeProfile;
+use App\Models\Order\Order;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,6 +21,26 @@ class Branch extends Model
 
     public function branchTimeHistories()
     {
-        return $this->hasMany(BranchTimeHistory::class);
+        return $this->belongsToMany(
+            BranchTimeHistory::class,
+            'branch_week_days',
+            'week_day_id',
+            'branch_time_history_id'
+        );
+    }
+
+    public function employees()
+    {
+        return $this->hasMany(EmployeeProfile::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function drivers()
+    {
+        return $this->hasMany(DriverProfile::class);
     }
 }

@@ -15,4 +15,20 @@ class BranchTimeHistory extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+
+    public function weekDays()
+    {
+
+        return $this->belongsToMany(
+            WeekDay::class,
+            'branch_week_days', // ✅ correct table
+            'branch_time_history_id',
+            'week_day_id'
+        );
+    }
+
+    public function branchWeekDays()
+    {
+        return $this->hasMany(BranchWeekDay::class);
+    }
 }

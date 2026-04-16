@@ -11,15 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('branch_time_histories', function (Blueprint $table) {
+        Schema::create('branch_week_days', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('branch_id');
-            $table->Time('opening_time');
-            $table->Time('closing_time');
-            $table->date('operation_date');
+            $table->foreignId('branch_time_history_id')->constrained('branch_time_histories')->onDelete('cascade');
+            $table->foreignId('week_day_id')->constrained('week_days')->onDelete('cascade');
             $table->timestamps();
-
-            $table->foreign('branch_id')->references('id')->on('branches')->onDelete('cascade');
         });
     }
 
@@ -28,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('branch_time_histories');
+        Schema::dropIfExists('branch_week_days');
     }
 };
