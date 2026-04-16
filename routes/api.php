@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OtpController;
+use App\Http\Controllers\Company\CompanyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -15,15 +16,22 @@ Route::group([
 ], function ($router) {
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/login', [AuthController::class, 'login']);
-    Route::delete('/logout', [AuthController::class, 'logout']);
-    Route::post('/refresh', [AuthController::class, 'refresh']);
-    Route::get('/me', [AuthController::class, 'me']);
+    Route::delete('/logout', [AuthController::class, 'logout'])->middleware('auth:api');
+    Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('auth:api');
+    Route::get('/me', [AuthController::class, 'me'])->middleware('auth:api');
 });
 
 Route::group([
     'middleware' => 'api',
     'prefix' => 'otp',
 ], function ($router) {
-    Route::post('/verify', [OtpController::class, 'verify']);
-    Route::post('/resend', [OtpController::class, 'resendCode']);
+    Route::post('/verify', [OtpController::class, 'verify'])->middleware('auth:api');
+    Route::post('/resend', [OtpController::class, 'resendCode'])->middleware('auth:api');
+});
+
+Route::middleware(['auth:api'])->group(function () {
+    Route::post('companies', [CompanyController::class, 'store'])->middleware('role_or_permission:create companies')->name('companies.store');
+    Route::get('companies', [CompanyController::class, 'index'])->middleware('role_or_permission:view companies')->name('companies.index');
+    Route::get('companies/{companyId}', [CompanyController::class, 'show'])->middleware('role_or_permission:view companies')->name('companies.show');
+    Route::put('companies/{companyId}', [CompanyController::class, 'update'])->middleware('role_or_permission:update companies')->name('companies.update');
 });
