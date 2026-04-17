@@ -126,6 +126,7 @@ class OTPService
         $result = $this->verifyOtp(
             $user['phone'],
             $data['otp']);
+        $user->update(['phone_verified_at' => now()]);
 
         return [
             'data' => $result,

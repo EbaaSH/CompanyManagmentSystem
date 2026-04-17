@@ -17,6 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('branch_id');
             $table->unsignedBigInteger('job_title_id');
+            $table->unsignedBigInteger('shift_id');
             $table->date('hire_date');
             $table->tinyInteger('is_active')->default(1);
             $table->timestamps();
@@ -25,6 +26,7 @@ return new class extends Migration
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->foreign('branch_id')->references('id')->on('branches')->onDelete('cascade');
             $table->foreign('job_title_id')->references('id')->on('job_titles')->onDelete('cascade');
+            $table->foreign('shift_id')->references('id')->on('shifts')->onDelete('cascade');
         });
     }
 

@@ -4,7 +4,6 @@ namespace App\Models\Employee;
 
 use App\Models\Company\Branch;
 use App\Models\Company\Company;
-use App\Models\JobTitle;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

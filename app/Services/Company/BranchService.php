@@ -26,6 +26,7 @@ class BranchService
             'employees',
             'orders',
             'drivers',
+            'branchTimeHistories',
 
         ])->paginate(10);
 
@@ -197,7 +198,7 @@ class BranchService
         }
 
         return [
-            'data' => $branch->load('branchTimeHistories.weekDays'),
+            'data' => $branch->load('branchTimeHistories.weekDays', 'branchTimeHistories'),
             'message' => 'Branch updated successfully',
             'code' => 200,
         ];

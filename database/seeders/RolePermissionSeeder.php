@@ -10,30 +10,70 @@ class RolePermissionSeeder extends Seeder
 {
     public function run()
     {
-        // Create Permissions for Company
-        Permission::create(['name' => 'view companies']);
-        Permission::create(['name' => 'create companies']);
-        Permission::create(['name' => 'update companies']);
-        Permission::create(['name' => 'delete companies']);
+        // -------------------------------
+        // Company Permissions
+        // -------------------------------
+        $companyPermissions = [
+            'view companies',
+            'create companies',
+            'update companies',
+            'delete companies',
+        ];
 
-        // Create Permissions for Branches
-        Permission::create(['name' => 'view branches']);
-        Permission::create(['name' => 'create branches']);
-        Permission::create(['name' => 'update branches']);
+        // -------------------------------
+        // Branch Permissions
+        // -------------------------------
+        $branchPermissions = [
+            'view branches',
+            'create branches',
+            'update branches',
+        ];
 
-        // Create Roles
-        $superAdminRole = Role::create(['name' => 'super_admin']);
-        $companyAdminRole = Role::create(['name' => 'company_admin']);
-        $branchManagerRole = Role::create(['name' => 'branch_manager']);
+        // -------------------------------
+        // Employee Permissions
+        // -------------------------------
+        $employeePermissions = [
+            'view employees',
+            'create employees',
+            'update employees',
+            'assign employee branch',
+        ];
 
-        // Assign Permissions to Roles
-        $superAdminRole->givePermissionTo(Permission::all());
-        $companyAdminRole->givePermissionTo(['view companies', 'create companies', 'update companies']);
-        $branchManagerRole->givePermissionTo('view companies');
+        // Create all permissions
+        foreach (array_merge(
+            $companyPermissions,
+            $branchPermissions,
+            $employeePermissions
+        ) as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
 
-        // Assign Permissions to Roles
-        $superAdminRole->givePermissionTo(Permission::all());
-        $companyAdminRole->givePermissionTo(['view branches', 'create branches', 'update branches']);
-        $branchManagerRole->givePermissionTo('view branches');
+        // -------------------------------
+        // Roles
+        // -------------------------------
+        $superAdmin = Role::firstOrCreate(['name' => 'super_admin']);
+        $companyAdmin = Role::firstOrCreate(['name' => 'company_admin']);
+        $branchManager = Role::firstOrCreate(['name' => 'branch_manager']);
+
+        // -------------------------------
+        // Assign Permissions
+        // -------------------------------
+
+        // Super Admin → everything
+        $superAdmin->syncPermissions(Permission::all());
+
+        // Company Admin
+        $companyAdmin->syncPermissions(array_merge(
+            $companyPermissions,
+            $branchPermissions,
+            $employeePermissions
+        ));
+
+        // Branch Manager (limited)
+        $branchManager->syncPermissions([
+            'view companies',
+            'view branches',
+            'view employees',
+        ]);
     }
 }

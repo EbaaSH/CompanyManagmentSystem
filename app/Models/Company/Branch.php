@@ -21,11 +21,9 @@ class Branch extends Model
 
     public function branchTimeHistories()
     {
-        return $this->belongsToMany(
+        return $this->hasMany(
             BranchTimeHistory::class,
-            'branch_week_days',
-            'week_day_id',
-            'branch_time_history_id'
+            'branch_id',
         );
     }
 

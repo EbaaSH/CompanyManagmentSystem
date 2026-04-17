@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Employee;
 
-use App\Models\Employee\EmployeeProfile;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 

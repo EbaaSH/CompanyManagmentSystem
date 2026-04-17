@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolePermissionSeeder::class,
             WeekDaySeeder::class,
+            EmployeeShiftJobSeeder::class,
         ]);
     }
 }
