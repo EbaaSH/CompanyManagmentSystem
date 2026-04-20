@@ -67,12 +67,14 @@ class AuthService
      */
     public function login($request)
     {
-        $credentials = $request->only('email', 'password');
+        $credentials = $request->only('phone', 'password');
 
         // Attempt to create a token
-        if (! $token = JWTAuth::attempt($credentials)) {
+        if (!$token = JWTAuth::attempt($credentials)) {
             return ['data' => null, 'message' => 'Unauthorized', 'code' => 401];
         }
+
+        // $this->otpService->sendOtp($request->phone);
 
         // Return success response with token
         return ['data' => $this->respondWithToken($token), 'message' => 'Login successful', 'code' => 200];

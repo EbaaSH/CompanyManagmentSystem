@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             WeekDaySeeder::class,
             EmployeeShiftJobSeeder::class,
+            UserSeeder::class
         ]);
     }
 }

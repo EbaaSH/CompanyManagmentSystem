@@ -199,4 +199,7 @@ return [
 
         'store' => 'default',
     ],
+    'defaults' => [
+        'guard' => 'api',           // match your API guard name
+    ],
 ];

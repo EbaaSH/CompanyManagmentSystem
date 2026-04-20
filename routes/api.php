@@ -3,13 +3,15 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Company\BranchController;
-use App\Http\Controllers\Company\CompanyController;
+use App\Http\Controllers\PlatformQuery\CompanyQueryController;
+use App\Http\Controllers\SuperAdmin\CompanyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+$user = auth()->user();
 
 Route::group([
     'middleware' => 'api',
@@ -29,13 +31,20 @@ Route::group([
     Route::post('/verify', [OtpController::class, 'verify'])->middleware('auth:api');
     Route::post('/resend', [OtpController::class, 'resendCode'])->middleware('auth:api');
 });
+Route::prefix($user->roles()->pluck('name')->first())
+    ->middleware(['auth:api'])
+    ->group(function () {
 
-Route::middleware(['auth:api'])->group(function () {
-    Route::post('companies', [CompanyController::class, 'store'])->middleware('role_or_permission:create companies')->name('companies.store');
-    Route::put('companies/{companyId}', [CompanyController::class, 'update'])->middleware('role_or_permission:update companies')->name('companies.update');
-    Route::get('companies', [CompanyController::class, 'index'])->middleware('role_or_permission:view companies')->name('companies.index');
-    Route::get('companies/{companyId}', [CompanyController::class, 'show'])->middleware('role_or_permission:view companies')->name('companies.show');
-});
+        Route::prefix('companies')->group(function () {
+
+            Route::post('/', [CompanyController::class, 'store']);
+            Route::put('/{id}', [CompanyController::class, 'update']);
+
+            Route::get('/', [CompanyQueryController::class, 'index']);
+            Route::get('/{id}', [CompanyQueryController::class, 'show']);
+
+        });
+    });
 
 Route::middleware(['auth:api'])->group(function () {
 

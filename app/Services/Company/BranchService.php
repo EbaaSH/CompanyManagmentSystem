@@ -14,7 +14,7 @@ class BranchService
     public function getBranchesByCompany($companyId)
     {
         $company = Company::find($companyId);
-        if (! $company) {
+        if (!$company) {
             return [
                 'data' => null,
                 'message' => 'Company not found',
@@ -42,7 +42,7 @@ class BranchService
     public function createBranchWithHistory($request, $companyId)
     {
         $company = Company::find($companyId);
-        if (! $company) {
+        if (!$company) {
             return [
                 'data' => null,
                 'message' => 'Company not found',
@@ -69,18 +69,18 @@ class BranchService
             foreach ($request->weekly_schedule as $item) {
                 $weekDay = WeekDay::where('day_name', $item['day'])->first();
 
-                if (! $weekDay) {
+                if (!$weekDay) {
                     return [
                         'data' => null,
-                        'message' => 'Invalid week day: '.$item['day'],
+                        'message' => 'Invalid week day: ' . $item['day'],
                         'code' => 400,
                     ];
                 }
 
                 $branchTimeHistory = BranchTimeHistory::create([
                     'branch_id' => $branch->id,
-                    'opening_time' => $item['opening_time'].':00',
-                    'closing_time' => $item['closing_time'].':00',
+                    'opening_time' => $item['opening_time'] . ':00',
+                    'closing_time' => $item['closing_time'] . ':00',
                     'operation_date' => $operationDate,
                 ]);
 
@@ -102,7 +102,7 @@ class BranchService
     public function getBranchById($companyId, $branchId)
     {
         $company = Company::find($companyId);
-        if (! $company) {
+        if (!$company) {
             return [
                 'data' => null,
                 'message' => 'Company not found',
@@ -111,7 +111,7 @@ class BranchService
         }
 
         $branchs = $company->branches()->where('id', $branchId)->first();
-        if (! $branchs) {
+        if (!$branchs) {
             return [
                 'data' => null,
                 'message' => 'Branch not found',
@@ -130,7 +130,7 @@ class BranchService
     public function updateBranch($request, $companyId, $branchId)
     {
         $company = Company::find($companyId);
-        if (! $company) {
+        if (!$company) {
             return [
                 'data' => null,
                 'message' => 'Company not found',
@@ -139,7 +139,7 @@ class BranchService
         }
 
         $branch = $company->branches()->find($branchId);
-        if (! $branch) {
+        if (!$branch) {
             return [
                 'data' => null,
                 'message' => 'Branch not found',
@@ -179,14 +179,14 @@ class BranchService
             foreach ($request->weekly_schedule as $item) {
                 $weekDay = WeekDay::where('day_name', $item['day'])->first();
 
-                if (! $weekDay) {
+                if (!$weekDay) {
                     continue;
                 }
 
                 $history = BranchTimeHistory::create([
                     'branch_id' => $branch->id,
-                    'opening_time' => $operationDate.' '.$item['opening_time'].':00',
-                    'closing_time' => $operationDate.' '.$item['closing_time'].':00',
+                    'opening_time' => $operationDate . ' ' . $item['opening_time'] . ':00',
+                    'closing_time' => $operationDate . ' ' . $item['closing_time'] . ':00',
                     'operation_date' => $operationDate,
                 ]);
 

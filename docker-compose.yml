@@ -1,0 +1,71 @@
+services:
+    # PHP Application
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: company-mgmt-app
+        restart: unless-stopped
+        working_dir: /var/www/html
+        ports:
+            - "8000:80"
+        environment:
+            - DB_CONNECTION=mysql
+            - DB_HOST=mysql
+            - DB_PORT=3306
+            - DB_DATABASE=company_mgmt
+            - DB_USERNAME=company_user
+            - DB_PASSWORD=company_password
+            - APP_DEBUG=true
+            - APP_ENV=local
+        depends_on:
+            - mysql
+        networks:
+            - company-network
+        volumes:
+            - ./:/var/www/html
+
+    # MySQL Database
+    mysql:
+        image: mysql:8.0
+        container_name: company-mgmt-mysql
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: company_mgmt
+            MYSQL_ROOT_PASSWORD: root_password
+            MYSQL_PASSWORD: company_password
+            MYSQL_USER: company_user
+        ports:
+            - "3306:3306"
+        networks:
+            - company-network
+        volumes:
+            - mysql_data:/var/lib/mysql
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+            timeout: 20s
+            retries: 10
+
+    # phpMyAdmin for database management
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin:latest
+        container_name: company-mgmt-phpmyadmin
+        restart: unless-stopped
+        depends_on:
+            - mysql
+        environment:
+            PMA_HOST: mysql
+            PMA_PORT: 3306
+            PMA_USER: company_user
+            PMA_PASSWORD: company_password
+        ports:
+            - "8080:80"
+        networks:
+            - company-network
+
+volumes:
+    mysql_data:
+
+networks:
+    company-network:
+        driver: bridge

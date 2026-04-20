@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+.vscode
+.idea
+*.swp
+*.swo
+*~
+storage/logs/*
+bootstrap/cache/*
