@@ -2,7 +2,8 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OtpController;
-use App\Http\Controllers\Company\BranchController;
+use App\Http\Controllers\CompanyManager\BranchController;
+use App\Http\Controllers\PlatformQuery\BranchQueryController;
 use App\Http\Controllers\PlatformQuery\CompanyQueryController;
 use App\Http\Controllers\SuperAdmin\CompanyController;
 use Illuminate\Http\Request;
@@ -31,8 +32,7 @@ Route::group([
     Route::post('/verify', [OtpController::class, 'verify'])->middleware('auth:api');
     Route::post('/resend', [OtpController::class, 'resendCode'])->middleware('auth:api');
 });
-Route::prefix($user->roles()->pluck('name')->first())
-    ->middleware(['auth:api'])
+Route::middleware(['auth:api'])
     ->group(function () {
 
         Route::prefix('companies')->group(function () {
@@ -46,20 +46,16 @@ Route::prefix($user->roles()->pluck('name')->first())
         });
     });
 
-Route::middleware(['auth:api'])->group(function () {
+Route::middleware(['auth:api'])
+    ->group(function () {
 
-    Route::prefix('companies/{companyId}')->group(function () {
-        Route::post('/branches', [BranchController::class, 'store'])
-            ->middleware('permission:create branches');
+        Route::prefix('branches')->group(function () {
 
-        Route::put('/branches/{branchId}', [BranchController::class, 'update'])
-            ->middleware('permission:update branches');
+            Route::post('/', [BranchController::class, 'store']);
+            Route::put('/{id}', [BranchController::class, 'update']);
 
-        Route::get('/branches', [BranchController::class, 'index'])
-            ->middleware('permission:view branches');
+            Route::get('/', [BranchQueryController::class, 'index']);
+            Route::get('/{id}', [BranchQueryController::class, 'show']);
 
-        Route::get('/branches/{branchId}', [BranchController::class, 'show'])
-            ->middleware('permission:view branches');
-
+        });
     });
-});

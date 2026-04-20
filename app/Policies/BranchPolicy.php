@@ -28,6 +28,7 @@ class BranchPolicy
         if ($user->hasRole('company-manager')) {
             return $branch->company_id === $user->ownedCompany->id;
         }
+
         return $user->hasRole('super-admin');
     }
 
@@ -37,6 +38,34 @@ class BranchPolicy
     }
 
     // TECHNIQUE 2
+
+    public function viewAnyViaPermission(User $user): bool
+    {
+        return $user->can('branches.scope.all') || $user->can('branches.scope.active');
+    }
+
+    public function viewViaPermission(User $user, Branch $branch): bool
+    {
+        if ($user->can('branches.scope.active')) {
+            return true;
+        }
+
+        if ($user->can('branches.scope.all')) {
+            return true;
+        }
+
+        if ($user->can('branches.scope.company')) {
+            return $user->ownedCompany
+                && $branch->company_id === $user->ownedCompany->id;
+        }
+
+        if ($user->can('branches.scope.own')) {
+            return $branch->user_id === $user->id;
+        }
+
+        return false;
+    }
+
     public function createViaPermission(User $user): bool
     {
         return $user->can('branches.write');
@@ -44,15 +73,23 @@ class BranchPolicy
 
     public function updateViaPermission(User $user, Branch $branch): bool
     {
-        if (!$user->can('branches.write'))
+        if (! $user->can('branches.write')) {
             return false;
+        }
+
+        if ($user->can('branches.scope.all')) {
+            return true;
+        }
+
+        if ($user->can('branches.scope.company')) {
+            return $user->ownedCompany
+                && $branch->company_id === $user->ownedCompany->id;
+        }
 
         if ($user->can('branches.scope.own')) {
             return $branch->user_id === $user->id;
         }
-        if ($user->can('branches.scope.company')) {
-            return $branch->company_id === $user->resolveCompanyId();
-        }
-        return $user->can('branches.scope.all');
+
+        return false;
     }
 }

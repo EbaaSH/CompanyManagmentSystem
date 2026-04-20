@@ -3,8 +3,8 @@
 namespace App\Http\Requests\SuperAdmin;
 
 use App\Http\Responses\Response;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
 
 class UpdateCompanyRequest extends FormRequest
@@ -27,6 +27,7 @@ class UpdateCompanyRequest extends FormRequest
 
             // Manager Info
             'manager_name' => 'sometimes|string|max:150',
+            'manager_phone' => 'sometimes|string|max:20',
             'manager_email' => "sometimes|email|unique:users,email,{$this->user()->id}",
         ];
     }

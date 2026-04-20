@@ -14,7 +14,7 @@ class EmployeeProfile extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'company_id', 'branch_id', 'job_title_id', 'hire_date', 'is_active'];
+    protected $fillable = ['user_id', 'company_id', 'branch_id', 'shift_id', 'job_title_id', 'hire_date', 'is_active'];
 
     // ─── Relationships ────────────────────────────────────────────────
 
@@ -22,18 +22,22 @@ class EmployeeProfile extends Model
     {
         return $this->belongsTo(User::class);
     }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
+
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
     }
+
     public function jobTitle(): BelongsTo
     {
         return $this->belongsTo(JobTitle::class);
     }
+
     public function shift(): BelongsTo
     {
         return $this->belongsTo(Shift::class);

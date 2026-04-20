@@ -7,17 +7,17 @@ use App\Models\Employee\EmployeeProfile;
 use App\Models\Menu\Menu;
 use App\Models\Order\Order;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
+
 class Branch extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['company_id', 'name', 'code', 'address', 'city', 'latitude', 'longitude', 'phone', 'is_active'];
-
+    protected $fillable = ['user_id', 'company_id', 'name', 'code', 'address', 'city', 'latitude', 'longitude', 'phone', 'is_active'];
 
     public function branchTimeHistories()
     {
@@ -112,7 +112,7 @@ class Branch extends Model
         if ($user->employeeProfile) {
             return $query->where('id', $user->employeeProfile->branch_id);
         }
+
         return $query->whereRaw('0 = 1');
     }
-
 }

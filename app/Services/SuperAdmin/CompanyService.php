@@ -5,7 +5,6 @@ namespace App\Services\SuperAdmin;
 use App\Models\Company\Company;
 use App\Models\User;
 
-
 class CompanyService
 {
     public function createCompanyWithManager($request)
@@ -14,6 +13,7 @@ class CompanyService
         $user = User::create([
             'name' => $request->manager_name,
             'email' => $request->manager_email,
+            'phone' => $request->phone,
             'password' => bcrypt($request->password),
         ]);
 
@@ -25,10 +25,8 @@ class CompanyService
             'legal_name' => $request->legal_name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'status' => $request->status ?? "active",
+            'status' => $request->status ?? 'active',
         ]);
-
-        $this->authorize('create', Company::class);
 
         $user->update(['phone_verified_at' => now()]);
 
@@ -41,10 +39,8 @@ class CompanyService
 
     public function updateCompany($request, $companyId)
     {
-        $user = auth()->user();
-        $this->authorize('update', Company::class);
         $company = Company::find($companyId);
-        if (!$company) {
+        if (! $company) {
             return [
                 'data' => null,
                 'message' => 'Company not found',
@@ -54,6 +50,7 @@ class CompanyService
         $company->manager()->update([
             'name' => $request->name ?? $company->manager->name,
             'email' => $request->email ?? $company->manager->email,
+            'phone' => $request->phone ?? $company->manager->phone,
             'password' => isset($request->password) ? bcrypt($request->password) : $company->manager->password,
         ]);
         $company->update([
