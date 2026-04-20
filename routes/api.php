@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\CompanyManager\BranchController;
 use App\Http\Controllers\PlatformQuery\BranchQueryController;
 use App\Http\Controllers\PlatformQuery\CompanyQueryController;
+use App\Http\Controllers\PlatformQuery\DriverQueryController;
+use App\Http\Controllers\PlatformQuery\EmployeeQueryController;
 use App\Http\Controllers\SuperAdmin\CompanyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -57,5 +59,20 @@ Route::middleware(['auth:api'])
             Route::get('/', [BranchQueryController::class, 'index']);
             Route::get('/{id}', [BranchQueryController::class, 'show']);
 
+        });
+    });
+Route::middleware(['auth:api'])
+    ->group(function () {
+        Route::prefix('employees')->group(function () {
+            Route::get('/', [EmployeeQueryController::class, 'index']);
+            Route::get('/{id}', [EmployeeQueryController::class, 'show']);
+        });
+    });
+
+Route::middleware(['auth:api'])
+    ->group(function () {
+        Route::prefix('drivers')->group(function () {
+            Route::get('/', [DriverQueryController::class, 'index']);
+            Route::get('/{id}', [DriverQueryController::class, 'show']);
         });
     });
