@@ -13,11 +13,11 @@ class MenuItem extends Model
 
     public function category()
     {
-        return $this->belongsTo(MenuCategory::class);
+        return $this->belongsTo(MenuCategory::class, 'category_id');
     }
 
     public function itemOptionGroups()
     {
-        return $this->hasMany(ItemOptionGroup::class);
+        return $this->hasMany(ItemOptionGroup::class, 'item_id');
     }
 }

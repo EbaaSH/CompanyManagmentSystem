@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OtpController;
+use App\Http\Controllers\BranchManager\MenuController;
 use App\Http\Controllers\CompanyManager\BranchController;
 use App\Http\Controllers\PlatformQuery\BranchQueryController;
 use App\Http\Controllers\PlatformQuery\CompanyQueryController;
 use App\Http\Controllers\PlatformQuery\DriverQueryController;
 use App\Http\Controllers\PlatformQuery\EmployeeQueryController;
+use App\Http\Controllers\PlatformQuery\MenuQueryController;
 use App\Http\Controllers\SuperAdmin\CompanyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -74,5 +76,16 @@ Route::middleware(['auth:api'])
         Route::prefix('drivers')->group(function () {
             Route::get('/', [DriverQueryController::class, 'index']);
             Route::get('/{id}', [DriverQueryController::class, 'show']);
+        });
+    });
+
+Route::middleware(['auth:api'])
+    ->group(function () {
+        Route::prefix('menus')->group(function () {
+            Route::post('/', [MenuController::class, 'store']);
+            Route::put('/{id}', [MenuController::class, 'update']);
+
+            Route::get('/', [MenuQueryController::class, 'index']);
+            Route::get('/{id}', [MenuQueryController::class, 'show']);
         });
     });

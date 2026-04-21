@@ -34,7 +34,7 @@ class StoreMenuRequest extends FormRequest
             'categories.*.items' => 'required|array|min:1',
             'categories.*.items.*.name' => 'required|string|max:150',
             'categories.*.items.*.description' => 'nullable|string',
-            'categories.*.items.*.image_url' => 'nullable|string|max:255',
+            'categories.*.items.*.image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'categories.*.items.*.price' => 'required|numeric|min:0',
             'categories.*.items.*.preparation_time_minutes' => 'required|integer|min:1',
 
@@ -51,6 +51,7 @@ class StoreMenuRequest extends FormRequest
             'categories.*.items.*.option_groups.*.options.*.extra_price' => 'nullable|numeric|min:0',
         ];
     }
+
     protected function failedValidation(Validator $validator)
     {
         throw new ValidationException(

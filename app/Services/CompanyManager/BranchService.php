@@ -30,7 +30,7 @@ class BranchService
             'phone' => $request->phone,
         ]);
 
-        $user->addBinding('branch-manager');
+        $user->assignRole('branch-manager');
 
         $companyId = $company->id;
         $branch = Branch::create([

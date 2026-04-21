@@ -13,6 +13,6 @@ class ItemOption extends Model
 
     public function optionGroup()
     {
-        return $this->belongsTo(ItemOptionGroup::class);
+        return $this->belongsTo(ItemOptionGroup::class, 'option_group_id');
     }
 }
