@@ -4,8 +4,10 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\BranchManager\MenuController;
 use App\Http\Controllers\CompanyManager\BranchController;
+use App\Http\Controllers\Customer\CustomerController;
 use App\Http\Controllers\PlatformQuery\BranchQueryController;
 use App\Http\Controllers\PlatformQuery\CompanyQueryController;
+use App\Http\Controllers\PlatformQuery\CustomerQueryController;
 use App\Http\Controllers\PlatformQuery\DriverQueryController;
 use App\Http\Controllers\PlatformQuery\EmployeeQueryController;
 use App\Http\Controllers\PlatformQuery\MenuQueryController;
@@ -87,5 +89,23 @@ Route::middleware(['auth:api'])
 
             Route::get('/', [MenuQueryController::class, 'index']);
             Route::get('/{id}', [MenuQueryController::class, 'show']);
+        });
+    });
+
+Route::post('customers/register', [CustomerController::class, 'registerCustomer']);
+
+Route::middleware(['auth:api'])
+    ->group(function () {
+        Route::prefix('customers')->group(function () {
+            Route::put('/updateProfile/{id}', [CustomerController::class, 'updateCustomer']);
+            Route::put('/updatePassword/{id}', [CustomerController::class, 'updatePassword']);
+
+        });
+    });
+Route::middleware(['auth:api'])
+    ->group(function () {
+        Route::prefix('customers')->group(function () {
+            Route::get('/', [CustomerQueryController::class, 'index']);
+            Route::get('/{id}', [CustomerQueryController::class, 'show']);
         });
     });
