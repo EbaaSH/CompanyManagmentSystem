@@ -106,6 +106,7 @@ Route::middleware(['auth:api'])
 
         });
     });
+
 Route::middleware(['auth:api'])
     ->group(function () {
         Route::prefix('orders')->group(function () {

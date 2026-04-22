@@ -22,8 +22,7 @@ class OrderController extends Controller
 
     public function store(CreateOrderRequest $request)
     {
-        $user = auth()->user();
-        $this->authorize('create', $user);
+        $this->authorize('create', Order::class);
         DB::beginTransaction();
         try {
             $data = $this->orderService->placeOrder($request);

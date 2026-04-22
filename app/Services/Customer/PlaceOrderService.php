@@ -46,14 +46,14 @@ class PlaceOrderService
             ]);
 
             // options
-            if (!empty($itemData['options'])) {
+            if (! empty($itemData['options'])) {
                 foreach ($itemData['options'] as $opt) {
 
                     $option = ItemOption::findOrFail($opt['option_id']);
 
                     OrderItemOption::create([
                         'order_item_id' => $orderItem->id,
-                        'option_group_name_snapshot' => $option->group->name,
+                        'option_group_name_snapshot' => $option->optionGroup->name,
                         'option_name_snapshot' => $option->name,
                         'extra_price' => $option->extra_price,
                     ]);
@@ -69,7 +69,7 @@ class PlaceOrderService
         OrderInvoice::create([
             'order_id' => $order->id,
             'subtotal' => $subtotal,
-            'delivery_free' => 0,
+            'delivery_fee' => 0,
             'discount' => 0,
             'tax' => 0,
             'total' => $subtotal,
@@ -112,33 +112,24 @@ class PlaceOrderService
         if ($order->status !== 'pending') {
             return [
                 'data' => null,
-                'message' => 'you can not update the order',
+                'message' => 'You cannot update the order',
                 'code' => 400,
             ];
         }
 
+        // Update order fields like delivery address and notes
         $order->update([
             'delivery_address_id' => $request->delivery_address_id,
             'notes' => $request->notes ?? '',
         ]);
 
-        // delete old items
-        $order->items()->delete();
-        $order = Order::create([
-            'order_number' => uniqid('ORD-'),
-            'customer_id' => auth()->user()->customerProfile->id,
-            'company_id' => $request->company_id,
-            'branch_id' => $request->branch_id,
-            'delivery_address_id' => $request->delivery_address_id,
-            'driver_id' => null,
-            'status' => 'pending',
-            'notes' => $request->notes ?? '',
-        ]);
+        // Delete old order items
+        $order->orderItems()->delete();
 
+        // Add new order items
         $subtotal = 0;
 
         foreach ($request->items as $itemData) {
-
             $menuItem = MenuItem::findOrFail($itemData['menu_item_id']);
 
             $lineTotal = $menuItem->price * $itemData['quantity'];
@@ -154,14 +145,13 @@ class PlaceOrderService
             ]);
 
             // options
-            if (!empty($itemData['options'])) {
+            if (! empty($itemData['options'])) {
                 foreach ($itemData['options'] as $opt) {
-
                     $option = ItemOption::findOrFail($opt['option_id']);
 
                     OrderItemOption::create([
                         'order_item_id' => $orderItem->id,
-                        'option_group_name_snapshot' => $option->group->name,
+                        'option_group_name_snapshot' => $option->optionGroup->name,
                         'option_name_snapshot' => $option->name,
                         'extra_price' => $option->extra_price,
                     ]);
@@ -173,31 +163,22 @@ class PlaceOrderService
             $subtotal += $lineTotal;
         }
 
-        // invoice
-        OrderInvoice::create([
-            'order_id' => $order->id,
+        // Update invoice
+        $order->orderInvoice()->update([
             'subtotal' => $subtotal,
-            'delivery_free' => 0,
-            'discount' => 0,
-            'tax' => 0,
-            'total' => $subtotal,
+            'total' => $subtotal, // Assuming no tax, delivery fee, or discount for now
         ]);
 
-        // status history
+        // Update status history
         OrderStatusHistory::create([
             'order_id' => $order->id,
-            'old_status' => 'none',
-            'new_status' => 'pending',
+            'old_status' => $order->status,
+            'new_status' => 'pending',  // Assuming the status is pending while updating
             'changed_by_user_id' => auth()->id(),
-            'reason' => 'Order created',
+            'reason' => 'Order updated',
         ]);
 
-        // order Status
-        OrderStatus::create([
-            'order_id' => $order->id,
-            'placed_at' => now(),
-        ]);
-
+        // Returning the updated order
         return [
             'data' => $order->load(
                 'deliveryAddress',
@@ -208,9 +189,8 @@ class PlaceOrderService
                 'orderItems.menuItem',
                 'orderItems.orderItemOptions'
             ),
-            'message' => 'order placed successfully',
+            'message' => 'Order updated successfully',
             'code' => 200,
         ];
-
     }
 }

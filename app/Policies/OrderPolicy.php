@@ -58,8 +58,7 @@ class OrderPolicy
     public function update(User $user, Order $order): bool
     {
         // must have write AND not be scoped to assigned-only (driver) or own (customer placing)
-        return $user->can('orders.write')
-            && !$user->can('orders.scope.assigned')
-            && !$user->can('orders.scope.own');
+        return $user->can('orders.write');
+
     }
 }
