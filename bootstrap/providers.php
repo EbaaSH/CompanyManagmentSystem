@@ -1,9 +1,7 @@
 <?php
 
-use App\Providers\AppServiceProvider;
-use Spatie\Permission\PermissionServiceProvider;
-
 return [
-    AppServiceProvider::class,
-    PermissionServiceProvider::class,
+    App\Providers\AppServiceProvider::class,
+    App\Providers\EventServiceProvider::class,
+    Spatie\Permission\PermissionServiceProvider::class,
 ];

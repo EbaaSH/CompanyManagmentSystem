@@ -5,7 +5,9 @@ use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\BranchManager\MenuController;
 use App\Http\Controllers\CompanyManager\BranchController;
 use App\Http\Controllers\Customer\CustomerController;
-use App\Http\Controllers\Customer\OrderController;
+use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
+use App\Http\Controllers\Driver\DeliveryController;
+use App\Http\Controllers\Employee\OrderController as EmployeeOrderController;
 use App\Http\Controllers\PlatformQuery\BranchQueryController;
 use App\Http\Controllers\PlatformQuery\CompanyQueryController;
 use App\Http\Controllers\PlatformQuery\CustomerQueryController;
@@ -107,11 +109,66 @@ Route::middleware(['auth:api'])
         });
     });
 
+// ===== CUSTOMER ORDER ROUTES =====
+Route::middleware(['auth:api'])->group(function () {
+    Route::prefix('customer/orders')->group(function () {
+        // Place new order
+        Route::post('/', [CustomerOrderController::class, 'store']);
+        // Update pending order
+        Route::put('/{id}', [CustomerOrderController::class, 'update']);
+        // Cancel order
+        Route::delete('/{id}', [CustomerOrderController::class, 'cancel']);
+        // Get my orders
+        Route::get('/', [CustomerOrderController::class, 'myOrders']);
+        // Get active orders (in-progress)
+        Route::get('/active/list', [CustomerOrderController::class, 'activeOrders']);
+        // Get order details
+        Route::get('/{id}', [CustomerOrderController::class, 'show']);
+        // Track delivery
+        Route::get('/{id}/track', [CustomerOrderController::class, 'trackDelivery']);
+    });
+});
+
+// ===== EMPLOYEE ORDER MANAGEMENT ROUTES =====
+Route::middleware(['auth:api'])->group(function () {
+    Route::prefix('employee/orders')->group(function () {
+        // Get kitchen orders (in-progress)
+        Route::get('/', [EmployeeOrderController::class, 'getKitchenOrders']);
+        // Get order details
+        Route::get('/{id}', [EmployeeOrderController::class, 'show']);
+        // Mark as preparing
+        Route::patch('/{id}/mark-preparing', [EmployeeOrderController::class, 'markPreparing']);
+        // Mark as ready for pickup
+        Route::patch('/{id}/mark-ready', [EmployeeOrderController::class, 'markReady']);
+        // Reject pending order
+        Route::patch('/{id}/reject', [EmployeeOrderController::class, 'reject']);
+    });
+});
+
+// ===== DRIVER DELIVERY ROUTES =====
+Route::middleware(['auth:api'])->group(function () {
+    Route::prefix('driver/deliveries')->group(function () {
+        // Get my deliveries
+        Route::get('/', [DeliveryController::class, 'getMyDeliveries']);
+        // Get delivery details
+        Route::get('/{id}', [DeliveryController::class, 'show']);
+        // Accept delivery
+        Route::patch('/{id}/accept', [DeliveryController::class, 'accept']);
+        // Reject delivery
+        Route::patch('/{id}/reject', [DeliveryController::class, 'reject']);
+        // Pickup order from branch
+        Route::patch('/{id}/pickup', [DeliveryController::class, 'pickup']);
+        // Deliver order to customer
+        Route::patch('/{id}/deliver', [DeliveryController::class, 'deliver']);
+        // Mark delivery as failed
+        Route::patch('/{id}/fail', [DeliveryController::class, 'fail']);
+    });
+});
+
+// ===== LEGACY QUERY ROUTES (Keep for backward compatibility) =====
 Route::middleware(['auth:api'])
     ->group(function () {
         Route::prefix('orders')->group(function () {
-            Route::post('/', [OrderController::class, 'store']);
-            Route::put('/{id}', [OrderController::class, 'update']);
             Route::get('/', [OrderQueryController::class, 'index']);
             Route::get('/{id}', [OrderQueryController::class, 'show']);
         });

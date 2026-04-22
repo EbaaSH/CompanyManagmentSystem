@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -18,7 +19,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('branch_id');
             $table->unsignedBigInteger('delivery_address_id');
             $table->unsignedBigInteger('driver_id')->nullable();
-            $table->enum('status', ['pending', 'confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'delivered', 'cancelled', 'failed_delivery'])->default('pending');
+            $table->enum('status', ['pending', 'confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'delivered', 'cancelled', 'rejected', 'failed_delivery'])->default('pending');
             $table->text('notes')->nullable();
             $table->timestamps();
 
