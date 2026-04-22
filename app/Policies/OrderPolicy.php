@@ -10,10 +10,6 @@ use App\Models\User;
 class OrderPolicy
 {
     // TECHNIQUE 1
-    // public function viewAny(User $user): bool
-    // {
-    //     return true; // all roles have some level of order access
-    // }
 
     // public function view(User $user, Order $order): bool
     // {
@@ -39,6 +35,14 @@ class OrderPolicy
     // {
     //     return $user->hasAnyRole(['super-admin', 'company-manager']);
     // }
+    public function viewAny(User $user): bool
+    {
+        return $user->can('orders.scope.all')
+            || $user->can('orders.scope.company')
+            || $user->can('orders.scope.branch')
+            || $user->can('orders.scope.assigned')
+            || $user->can('orders.scope.own');
+    }
 
     // TECHNIQUE 2
     public function view(User $user, Order $order): bool
@@ -55,7 +59,7 @@ class OrderPolicy
     {
         // must have write AND not be scoped to assigned-only (driver) or own (customer placing)
         return $user->can('orders.write')
-            && ! $user->can('orders.scope.assigned')
-            && ! $user->can('orders.scope.own');
+            && !$user->can('orders.scope.assigned')
+            && !$user->can('orders.scope.own');
     }
 }

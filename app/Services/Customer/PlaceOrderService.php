@@ -46,7 +46,7 @@ class PlaceOrderService
             ]);
 
             // options
-            if (! empty($itemData['options'])) {
+            if (!empty($itemData['options'])) {
                 foreach ($itemData['options'] as $opt) {
 
                     $option = ItemOption::findOrFail($opt['option_id']);
@@ -91,7 +91,8 @@ class PlaceOrderService
         ]);
 
         return [
-            'data' => $order->load('deliveryAddress',
+            'data' => $order->load(
+                'deliveryAddress',
                 'orderItems',
                 'orderInvoice',
                 'orderStatus',
@@ -100,7 +101,7 @@ class PlaceOrderService
                 'orderItems.orderItemOptions'
             ),
             'message' => 'order placed successfully',
-            'code' => 200,
+            'code' => 201,
         ];
     }
 
@@ -153,7 +154,7 @@ class PlaceOrderService
             ]);
 
             // options
-            if (! empty($itemData['options'])) {
+            if (!empty($itemData['options'])) {
                 foreach ($itemData['options'] as $opt) {
 
                     $option = ItemOption::findOrFail($opt['option_id']);
@@ -196,6 +197,20 @@ class PlaceOrderService
             'order_id' => $order->id,
             'placed_at' => now(),
         ]);
+
+        return [
+            'data' => $order->load(
+                'deliveryAddress',
+                'orderItems',
+                'orderInvoice',
+                'orderStatus',
+                'statusHistories',
+                'orderItems.menuItem',
+                'orderItems.orderItemOptions'
+            ),
+            'message' => 'order placed successfully',
+            'code' => 200,
+        ];
 
     }
 }
