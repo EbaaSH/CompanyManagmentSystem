@@ -21,13 +21,14 @@ class OrderQueryService
                 'orderItems.orderItemOptions'
             )
             ->find($orderId);
-        if (!$order) {
+        if (! $order) {
             return [
                 'data' => null,
                 'message' => 'order not found',
                 'code' => 404,
             ];
         }
+
         return [
             'data' => $order,
             'message' => 'order found',

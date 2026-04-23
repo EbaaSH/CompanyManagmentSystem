@@ -26,15 +26,15 @@ class OrderStateMachine
      * State permissions (who can trigger)
      */
     private const PERMISSIONS = [
-        'pending' => ['system', 'admin'],
-        'confirmed' => ['employee', 'admin'],
-        'preparing' => ['employee', 'admin'],
-        'ready_for_pickup' => ['employee', 'admin'],
-        'picked_up' => ['driver', 'admin'],
-        'delivered' => ['driver', 'admin'],
-        'cancelled' => ['customer', 'employee', 'admin'],
-        'rejected' => ['employee', 'admin'],
-        'failed_delivery' => ['driver', 'admin'],
+        'pending' => ['system', 'branch-manager'],
+        'confirmed' => ['system', 'employee', 'branch-manager'],
+        'preparing' => ['employee', 'branch-manager'],
+        'ready_for_pickup' => ['employee', 'branch-manager'],
+        'picked_up' => ['driver', 'branch-manager'],
+        'delivered' => ['driver', 'branch-manager'],
+        'cancelled' => ['customer', 'employee', 'branch-manager'],
+        'rejected' => ['employee', 'branch-manager'],
+        'failed_delivery' => ['driver', 'branch-manager'],
     ];
 
     /**

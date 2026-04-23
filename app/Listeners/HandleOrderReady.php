@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\OrderReady;
+use App\Events\OrderStatusChanged;
 use App\Jobs\AssignDriverJob;
 use App\Models\Notification;
 

@@ -20,8 +20,8 @@ class UpdateOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => 'required|exists:companies,id',
-            'branch_id' => 'required|exists:branches,id',
+            // 'company_id' => 'required|exists:companies,id',
+            // 'branch_id' => 'required|exists:branches,id',
             'delivery_address_id' => 'required|exists:customer_addresses,id',
 
             'notes' => 'nullable|string',

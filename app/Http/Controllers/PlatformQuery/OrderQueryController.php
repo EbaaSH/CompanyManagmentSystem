@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\Response;
 use App\Models\Order\Order;
 use App\Services\PlatformQueryServices\OrderQueryService;
-use Illuminate\Http\Request;
 use Throwable;
 
 class OrderQueryController extends Controller
@@ -34,7 +33,7 @@ class OrderQueryController extends Controller
     public function show($id)
     {
         $order = Order::find($id);
-        if (!$order) {
+        if (! $order) {
             return Response::Error(null, 'order not found', 404);
         }
         $this->authorize('view', $order);

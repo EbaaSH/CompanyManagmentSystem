@@ -32,7 +32,7 @@ class HandleOrderConfirmed
                 'user_id' => $staff->user_id,
                 'type' => 'order.confirmed',
                 'title' => "New Order #{$order->order_number}",
-                'message' => 'Items: '.$order->items->pluck('item_name_snapshot')->join(', '),
+                'message' => 'Items: '.$order->orderItems->pluck('item_name_snapshot')->join(', '),
             ]);
 
             // Send push notification

@@ -60,7 +60,7 @@ class EventServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        parent::boot();
+        // parent::boot();
 
         // You can also register event listeners using closures here
         // Event::listen(OrderPlaced::class, function (OrderPlaced $event) {

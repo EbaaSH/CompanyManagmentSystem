@@ -73,6 +73,7 @@ class RolePermissionSeeder extends Seeder
             'orders.scope.assigned',
             'orders.scope.own',
             'orders.write',
+            'orders.delete',
 
             // Deliveries
             'deliveries.scope.all',
@@ -153,6 +154,7 @@ class RolePermissionSeeder extends Seeder
                 'deliveries.write',
                 'menus.scope.branch',
                 'menus.write',
+                'orders.delete',
             ]);
 
         // ── employee ─────────────────────────────────────────────────
@@ -168,6 +170,7 @@ class RolePermissionSeeder extends Seeder
                 'orders.write',
                 'deliveries.scope.branch',
                 'menus.scope.branch',
+                'orders.delete',
             ]);
 
         // ── driver ───────────────────────────────────────────────────
@@ -195,6 +198,7 @@ class RolePermissionSeeder extends Seeder
                 'orders.write',             // customers place orders
                 'deliveries.scope.own',
                 'menus.scope.active_now',
+                'orders.delete',
             ]);
     }
 }

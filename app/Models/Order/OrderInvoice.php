@@ -9,7 +9,7 @@ class OrderInvoice extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['order_id', 'subtotal', 'delivery_fee', 'discount', 'tax', 'total'];
+    protected $fillable = ['order_id', 'subtotal', 'delivery_free', 'discount', 'tax', 'total'];
 
     public function order()
     {

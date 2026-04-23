@@ -31,10 +31,13 @@ class OrderPolicy
     //     return $user->hasAnyRole(['company-manager', 'branch-manager', 'employee']);
     // }
 
-    // public function delete(User $user, Order $order): bool
-    // {
-    //     return $user->hasAnyRole(['super-admin', 'company-manager']);
-    // }
+    public function delete(User $user, Order $order): bool
+    {
+        return
+        // $user->can('orders.delete')&&
+        Order::forUserViaPermission($user)->where('id', $order->id)->exists();
+    }
+
     public function viewAny(User $user): bool
     {
         return $user->can('orders.scope.all')

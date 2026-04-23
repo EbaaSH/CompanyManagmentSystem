@@ -137,19 +137,19 @@ class PlaceOrderService
     {
         $branch = $order->branch;
 
-        // Calculate delivery fee (could be dynamic based on distance)
-        $deliveryFee = $branch->default_delivery_fee ?? 5.00;
+        // Calculate delivery free (could be dynamic based on distance)
+        $deliveryFree = $branch->default_delivery_free ?? 5.00;
 
         // Calculate tax (could be configurable)
         $taxRate = $branch->tax_rate ?? 0.10;
         $tax = round($subtotal * $taxRate, 2);
 
-        $total = $subtotal + $deliveryFee + $tax;
+        $total = $subtotal + $deliveryFree + $tax;
 
         return OrderInvoice::create([
             'order_id' => $order->id,
             'subtotal' => $subtotal,
-            'delivery_fee' => $deliveryFee,
+            'delivery_free' => $deliveryFree ?? 5.00,
             'tax' => $tax,
             'discount' => 0,
             'total' => $total,
@@ -183,7 +183,7 @@ class PlaceOrderService
         $branch = $order->branch;
 
         // Check branch is open
-        if (! $branch->is_open || ! $this->isBranchOpen($branch)) {
+        if (! $this->isBranchOpen($branch)) {
             throw ValidationException::withMessages([
                 'branch' => 'Branch is currently closed. Please try again later.',
             ]);
@@ -198,10 +198,10 @@ class PlaceOrderService
         }
 
         // Check delivery address
-        $address = $order->deliveryAddress;
-        if (! $address || ! $address->is_default) {
-            // Additional validation if needed
-        }
+        // $address = $order->deliveryAddress;
+        // if (! $address || ! $address->is_default) {
+        //     // Additional validation if needed
+        // }
 
         // All validations passed
 
@@ -210,23 +210,32 @@ class PlaceOrderService
     /**
      * CHECK IF BRANCH IS OPEN
      */
+    /**
+     * CHECK IF BRANCH IS OPEN TODAY
+     * Simple check: has opening hours for today and current time is within range
+     */
     private function isBranchOpen($branch): bool
     {
-        $now = now();
-        $dayOfWeek = strtolower($now->format('l'));
+        try {
+            $todayDayName = now()->format('l'); // e.g. Monday
+            $currentTime = now()->format('H:i:s');
 
-        // Get operating hours for today
-        $hours = $branch->operatingHours()
-            ->where('day_of_week', $dayOfWeek)
-            ->first();
+            $hours = $branch->branchTimeHistories()
+                ->whereHas('weekDays', function ($q) use ($todayDayName) {
+                    $q->where('day_name', $todayDayName);
+                })
+                ->first();
 
-        if (! $hours) {
+            if (! $hours) {
+                return false;
+            }
+
+            return $currentTime >= $hours->opening_time
+                && $currentTime <= $hours->closing_time;
+
+        } catch (\Exception $e) {
             return false;
         }
-
-        $currentTime = $now->format('H:i:s');
-
-        return $currentTime >= $hours->opening_time && $currentTime <= $hours->closing_time;
     }
 
     /**
@@ -239,43 +248,63 @@ class PlaceOrderService
 
     /**
      * FORMAT ORDER RESPONSE
+     * Uses already-loaded relationships to avoid extra queries
      */
     private function formatOrderResponse(Order $order): array
     {
-        $estimatedPrepTime = $order->orderItems()
-            ->with('menuItem')
-            ->get()
-            ->max(fn ($item) => $item->menuItem->preparation_time_minutes ?? 0);
+        // Calculate estimated preparation time from order items
+        $estimatedPrepTime = 0;
+        if ($order->orderItems && count($order->orderItems) > 0) {
+            $estimatedPrepTime = $order->orderItems
+                ->pluck('menuItem.preparation_time_minutes')
+                ->filter()
+                ->max() ?? 0;
+        }
 
-        $estimatedDeliveryTime = ($estimatedPrepTime ?? 0) + 30; // +30 min for delivery
+        $estimatedDeliveryTime = ($estimatedPrepTime ?? 0) + 30;
+
+        // Format items
+        $items = [];
+        if ($order->orderItems) {
+            foreach ($order->orderItems as $item) {
+                $options = [];
+                if ($item->orderItemOptions) {
+                    $options = $item->orderItemOptions
+                        ->pluck('option_name_snapshot')
+                        ->toArray();
+                }
+
+                $items[] = [
+                    'name' => $item->item_name_snapshot,
+                    'price' => $item->item_price_snapshot,
+                    'quantity' => $item->quantity,
+                    'options' => $options,
+                ];
+            }
+        }
 
         return [
             'id' => $order->id,
             'order_number' => $order->order_number,
             'status' => $order->status,
             'customer' => [
-                'name' => $order->customer->user->name ?? '',
-                'phone' => $order->customer->user->phone ?? '',
+                'name' => $order->customer?->user?->name ?? 'Guest',
+                'phone' => $order->customer?->user?->phone ?? 'N/A',
             ],
             'branch' => [
                 'id' => $order->branch->id,
                 'name' => $order->branch->name,
                 'address' => $order->branch->address,
             ],
-            'items' => $order->orderItems()->with(['menuItem', 'orderItemOptions'])->get()->map(fn ($item) => [
-                'name' => $item->item_name_snapshot,
-                'price' => $item->item_price_snapshot,
-                'quantity' => $item->quantity,
-                'options' => $item->orderItemOptions->map(fn ($opt) => $opt->option_name_snapshot),
-            ]),
+            'items' => $items,
             'invoice' => [
-                'subtotal' => $order->orderInvoice->subtotal,
-                'tax' => $order->orderInvoice->tax,
-                'delivery_fee' => $order->orderInvoice->delivery_fee,
-                'total' => $order->orderInvoice->total,
+                'subtotal' => $order->orderInvoice?->subtotal ?? 0,
+                'tax' => $order->orderInvoice?->tax ?? 0,
+                'delivery_free' => $order->orderInvoice?->delivery_free ?? 0,
+                'total' => $order->orderInvoice?->total ?? 0,
             ],
             'estimated_time' => "{$estimatedDeliveryTime} minutes",
-            'delivery_address' => $order->deliveryAddress->address ?? '',
+            'delivery_address' => $order->deliveryAddress?->address ?? 'N/A',
             'created_at' => $order->created_at,
         ];
     }
@@ -315,7 +344,7 @@ class PlaceOrderService
             // Update invoice
             $order->orderInvoice()->update([
                 'subtotal' => $subtotal,
-                'total' => $subtotal + $order->orderInvoice->delivery_fee + $order->orderInvoice->tax,
+                'total' => $subtotal + $order->orderInvoice->delivery_free + $order->orderInvoice->tax,
             ]);
 
             // Update payment amount

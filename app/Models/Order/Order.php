@@ -164,6 +164,7 @@ class Order extends Model
      */
     public function autoConfirm()
     {
+        $userId = auth()->user()->id;
         $stateMachine = $this->stateMachine();
 
         if (! $stateMachine->canTransition('confirmed', 'system')) {
@@ -171,7 +172,7 @@ class Order extends Model
         }
 
         $this->update(['status' => 'confirmed']);
-        $this->recordStatusHistory('pending', 'confirmed', 1, 'Auto-confirmed by system');
+        $this->recordStatusHistory('pending', 'confirmed', $userId, 'Auto-confirmed by system');
 
         // Fire event
         event(new OrderConfirmed($this));
