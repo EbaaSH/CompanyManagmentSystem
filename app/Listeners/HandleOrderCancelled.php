@@ -57,25 +57,33 @@ class HandleOrderCancelled
     private function notifyAllParties($order, $reason)
     {
         // Notify customer
-        Notification::create([
-            'user_id' => $order->customer->user_id,
-            'type' => 'order.cancelled',
-            'title' => 'Order cancelled',
-            'message' => "Order #{$order->order_number} has been cancelled.",
-        ]);
+        $customerUserId = $order->customer?->user_id;
 
-        // Notify kitchen
-        Notification::create([
-            'user_id' => $order->branch->manager->user_id,
-            'type' => 'order.cancelled',
-            'title' => "Order #{$order->order_number} cancelled",
-            'message' => "Reason: {$reason}",
-        ]);
-
-        // Notify driver if already assigned
-        if ($order->driver) {
+        if ($customerUserId) {
             Notification::create([
-                'user_id' => $order->driver->user_id,
+                'user_id' => $customerUserId,
+                'type' => 'order.cancelled',
+                'title' => 'Order cancelled',
+                'message' => "Order #{$order->order_number} has been cancelled.",
+            ]);
+        }
+
+        // Notify branch manager (kitchen)
+        $managerUserId = $order->branch->manager->id;
+
+        if ($managerUserId) {
+            Notification::create([
+                'user_id' => $managerUserId,
+                'type' => 'order.cancelled',
+                'title' => "Order #{$order->order_number} cancelled",
+                'message' => "Reason: {$reason}",
+            ]);
+        }
+        // Notify driver
+        $driverUserId = $order->driver?->user_id;
+        if ($driverUserId) {
+            Notification::create([
+                'user_id' => $driverUserId,
                 'type' => 'delivery.cancelled',
                 'title' => 'Delivery cancelled',
                 'message' => "Delivery #{$order->order_number} has been cancelled.",

@@ -20,9 +20,11 @@ class OrderController extends Controller
     public function markPreparing(MarkOrderPreparingRequest $request, $orderId)
     {
         try {
-            $this->authorize('update', Order::class);
-
-            $order = Order::findOrFail($orderId);
+            $order = Order::find($orderId);
+            if (! $order) {
+                return Response::Error(null, 'order not found', 404);
+            }
+            $this->authorize('update', $order);
 
             if ($order->status !== 'confirmed') {
                 return Response::Error([], 'Order must be in confirmed status');
@@ -57,9 +59,11 @@ class OrderController extends Controller
     public function markReady(MarkOrderReadyRequest $request, $orderId)
     {
         try {
-            $this->authorize('update', Order::class);
-
-            $order = Order::findOrFail($orderId);
+            $order = Order::find($orderId);
+            if (! $order) {
+                return Response::Error(null, 'order not found', 404);
+            }
+            $this->authorize('update', $order);
 
             if ($order->status !== 'preparing') {
                 return Response::Error([], 'Order must be in preparing status');
@@ -91,9 +95,12 @@ class OrderController extends Controller
     public function reject(RejectOrderRequest $request, $orderId)
     {
         try {
-            $this->authorize('delete', Order::class);
+            $order = Order::find($orderId);
 
-            $order = Order::findOrFail($orderId);
+            if (! $order) {
+                return Response::Error(null, 'order not found', 404);
+            }
+            $this->authorize('update', $order);
 
             if ($order->status !== 'pending') {
                 return Response::Error([], 'Can only reject pending orders');
@@ -147,7 +154,12 @@ class OrderController extends Controller
     public function show($orderId)
     {
         try {
-            $this->authorize('view', Order::class);
+            $order = Order::find($orderId);
+            if (! $order) {
+                return Response::Error(null, 'order not found', 404);
+            }
+
+            $this->authorize('view', $order);
 
             $order = Order::with([
                 'orderItems.menuItem',

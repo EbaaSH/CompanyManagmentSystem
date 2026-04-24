@@ -87,8 +87,8 @@ class OrderController extends Controller
             }
 
             DB::beginTransaction();
-
-            $order->cancel(auth()->user()->id(), $request->reason ?? 'Customer cancelled');
+            $user = auth()->user();
+            $order->cancel($user->id, $request->reason ?? 'Customer cancelled');
 
             DB::commit();
 

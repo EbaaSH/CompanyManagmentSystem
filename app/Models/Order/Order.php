@@ -41,12 +41,12 @@ class Order extends Model
 
     public function company(): BelongsTo
     {
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(Company::class, 'company_id');
     }
 
     public function branch(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
     public function driver(): BelongsTo
@@ -333,6 +333,7 @@ class Order extends Model
         }
 
         $this->update(['status' => 'cancelled']);
+
         $this->recordStatusHistory($this->status, 'cancelled', $userId, $reason);
 
         event(new OrderCancelled($this, $reason));

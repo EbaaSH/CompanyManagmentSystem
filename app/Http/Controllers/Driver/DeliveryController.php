@@ -10,11 +10,14 @@ use App\Http\Requests\Driver\PickupOrderRequest;
 use App\Http\Requests\Driver\RejectDeliveryRequest;
 use App\Http\Responses\Response;
 use App\Models\Delivery\Delivery;
+use App\Traits\UploadImage;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class DeliveryController extends Controller
 {
+    use UploadImage;
+
     /**
      * Get all assigned deliveries for driver
      */
@@ -49,7 +52,10 @@ class DeliveryController extends Controller
     public function accept(AcceptDeliveryRequest $request, $deliveryId)
     {
         try {
-            $delivery = Delivery::findOrFail($deliveryId);
+            $delivery = Delivery::find($deliveryId);
+            if (! $delivery) {
+                return Response::Error(null, 'delivery not found', 404);
+            }
             $this->authorize('update', $delivery);
 
             if ($delivery->delivery_status !== 'assigned') {
@@ -124,6 +130,9 @@ class DeliveryController extends Controller
     {
         try {
             $delivery = Delivery::findOrFail($deliveryId);
+            if (! $delivery) {
+                return Response::Error(null, 'delivery not found', 404);
+            }
             $this->authorize('update', $delivery);
 
             if ($delivery->delivery_status !== 'accepted') {
@@ -160,7 +169,12 @@ class DeliveryController extends Controller
     public function deliver(DeliverOrderRequest $request, $deliveryId)
     {
         try {
-            $delivery = Delivery::findOrFail($deliveryId);
+            $delivery = Delivery::find($deliveryId);
+
+            if (! $delivery) {
+                return Response::Error(null, 'deliverey not found', 404);
+            }
+
             $this->authorize('update', $delivery);
 
             if ($delivery->delivery_status !== 'picked_up') {
@@ -173,9 +187,15 @@ class DeliveryController extends Controller
 
             DB::beginTransaction();
 
+            $path = $this->uploadImage($request, "delivery/driver/{$delivery->driver_id}/proof", 'image');
+
+            if (! $path['success']) {
+                return Response::Error(null, 'the image not uploaded', 400);
+            }
+
             $delivery->deliver(
                 auth()->id(),
-                $request->proof_image_url,
+                $path['data'],
                 $request->delivery_notes
             );
 

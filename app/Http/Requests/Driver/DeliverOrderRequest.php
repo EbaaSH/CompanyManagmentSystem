@@ -20,7 +20,7 @@ class DeliverOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'proof_image_url' => 'required|string|url',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png',
             'delivery_notes' => 'nullable|string|max:500',
         ];
     }

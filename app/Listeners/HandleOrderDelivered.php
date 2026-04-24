@@ -32,7 +32,7 @@ class HandleOrderDelivered
         // Add loyalty points (1 point per $1)
         $loyaltyPoints = floor($order->orderInvoice->total);
         if ($order->customer && $order->customer->user) {
-            $order->customer->user->increment('loyalty_points', $loyaltyPoints);
+            $order->customer->increment('loyalty_points', $loyaltyPoints);
         }
 
         // Notify customer
