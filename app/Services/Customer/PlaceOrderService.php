@@ -2,6 +2,7 @@
 
 namespace App\Services\Customer;
 
+use App\Action\ConfirmOrder;
 use App\Models\Menu\ItemOption;
 use App\Models\Menu\MenuItem;
 use App\Models\Order\Order;
@@ -24,6 +25,15 @@ class PlaceOrderService
      * 5. Fire events
      * 6. Return response with estimated time
      */
+    private $confirmAction;
+
+    public function __construct(ConfirmOrder $confirmAction) {}
+
+    public function confirmActionFun($order)
+    {
+        return new ConfirmOrder($order);
+    }
+
     public function placeOrder($request)
     {
         // Create order in PENDING state
@@ -70,7 +80,9 @@ class PlaceOrderService
             $this->validateOrder($order);
 
             // AUTO-CONFIRM if validation passes
-            $order->autoConfirm();
+            $this->confirmAction = $this->confirmActionFun($order);
+
+            $this->confirmAction->autoConfirm();
 
             // Return response with estimated time
             return [

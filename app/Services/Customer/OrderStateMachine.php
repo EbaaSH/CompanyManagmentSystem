@@ -7,6 +7,13 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class OrderStateMachine
 {
+    private $order;
+
+    public function __construct(Order $order)
+    {
+        $this->order = $order;
+    }
+
     /**
      * Valid state transitions
      */
@@ -51,14 +58,13 @@ class OrderStateMachine
         'any_to_rejected' => 'validateRejection',
     ];
 
-    public function __construct(private Order $order) {}
-
     /**
      * Check if transition is valid
      */
     public function canTransition(string $newStatus, string $userRole = 'system'): bool
     {
         $currentStatus = $this->order->status;
+        // dd($currentStatus);
 
         // Check if transition exists
         if (! isset(self::TRANSITIONS[$currentStatus])) {
