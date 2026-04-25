@@ -38,6 +38,8 @@ class RolePermissionSeeder extends Seeder
             'companies.scope.own',
             'companies.scope.active',
             'companies.write',
+            'companies.update',
+            'companies.delete',
 
             // Branches
             'branches.scope.all',
@@ -103,7 +105,9 @@ class RolePermissionSeeder extends Seeder
         Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => $guard])
             ->syncPermissions([
                 'companies.scope.all',
-                'companies.write',          // only role that can create/delete companies
+                'companies.write',
+                'companies.update',
+                'companies.delete',        // only role that can create/delete companies
                 'branches.scope.all',
                 'employees.scope.all',
                 'drivers.scope.all',
@@ -122,6 +126,7 @@ class RolePermissionSeeder extends Seeder
         Role::firstOrCreate(['name' => 'company-manager', 'guard_name' => $guard])
             ->syncPermissions([
                 'companies.scope.own',
+                // 'companies.update',
                 'branches.scope.company',
                 'branches.write',
                 'employees.scope.company',

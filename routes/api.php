@@ -50,6 +50,9 @@ Route::middleware(['auth:api'])
             Route::post('/', [CompanyController::class, 'store']);
             Route::put('/{id}', [CompanyController::class, 'update']);
 
+            Route::delete('/{id}', [CompanyController::class, 'delete']);
+            Route::post('/{id}/restore', [CompanyController::class, 'restore']);
+
             Route::get('/', [CompanyQueryController::class, 'index']);
             Route::get('/{id}', [CompanyQueryController::class, 'show']);
 

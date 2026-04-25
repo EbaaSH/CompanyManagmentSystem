@@ -22,13 +22,16 @@ class CompanyController extends Controller
 
     public function store(StoreCompanyRequest $request)
     {
-        $this->authorize('createViaPermission', Company::class);
-        DB::beginTransaction();
         try {
+            $this->authorize('createViaPermission', Company::class);
+            DB::beginTransaction();
             $data = $this->service->createCompanyWithManager($request);
 
+            if (!$data['code'] == 201) {
+                DB::rollBack();
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
             DB::commit();
-
             return Response::Success($data['data'], $data['message'], $data['code']);
         } catch (Throwable $th) {
             DB::rollBack();
@@ -39,15 +42,67 @@ class CompanyController extends Controller
 
     public function update(UpdateCompanyRequest $request, $id)
     {
-        $this->authorize('updateViaPermission', Company::class);
-        DB::beginTransaction();
-
         try {
+            $company = Company::find($id);
+            if (!$company) {
+                return Response::Error(null, 'comapny not found', 404);
+            }
+            $this->authorize('updateViaPermission', $company);
+            DB::beginTransaction();
             $data = $this->service->updateCompany($request, $id);
 
             if ($data['code'] !== 200) {
                 DB::rollBack();
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
 
+            DB::commit();
+
+            return Response::Success($data['data'], $data['message']);
+        } catch (Throwable $th) {
+            DB::rollBack();
+
+            return Response::Error([], $th->getMessage());
+        }
+    }
+    public function delete($id)
+    {
+        try {
+            $company = Company::find($id);
+            if (!$company) {
+                return Response::Error(null, 'comapny not found', 404);
+            }
+            $this->authorize('deleteViaPermission', $company);
+            DB::beginTransaction();
+            $data = $this->service->deleteCompany($id);
+
+            if ($data['code'] !== 200) {
+                DB::rollBack();
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
+
+            DB::commit();
+
+            return Response::Success($data['data'], $data['message']);
+        } catch (Throwable $th) {
+            DB::rollBack();
+
+            return Response::Error([], $th->getMessage());
+        }
+    }
+    public function restore($id)
+    {
+        try {
+            $company = Company::onlyTrashed()->find($id);
+            if (!$company) {
+                return Response::Error(null, 'comapny not found', 404);
+            }
+            $this->authorize('deleteViaPermission', $company);
+            DB::beginTransaction();
+            $data = $this->service->restoreCompany($id);
+
+            if ($data['code'] !== 200) {
+                DB::rollBack();
                 return Response::Error($data['data'], $data['message'], $data['code']);
             }
 

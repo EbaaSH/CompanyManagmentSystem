@@ -13,7 +13,7 @@ class CompanyService
         $user = User::create([
             'name' => $request->manager_name,
             'email' => $request->manager_email,
-            'phone' => $request->phone,
+            'phone' => $request->manager_phone,
             'password' => bcrypt($request->password),
         ]);
 
@@ -39,8 +39,9 @@ class CompanyService
 
     public function updateCompany($request, $companyId)
     {
+        $user = auth()->user();
         $company = Company::find($companyId);
-        if (! $company) {
+        if (!$company) {
             return [
                 'data' => null,
                 'message' => 'Company not found',
@@ -48,9 +49,9 @@ class CompanyService
             ];
         }
         $company->manager()->update([
-            'name' => $request->name ?? $company->manager->name,
-            'email' => $request->email ?? $company->manager->email,
-            'phone' => $request->phone ?? $company->manager->phone,
+            'name' => $request->manager_name ?? $company->manager->name,
+            'email' => $request->manager_email ?? $company->manager->email,
+            'phone' => $request->manager_phone ?? $company->manager->phone,
             'password' => isset($request->password) ? bcrypt($request->password) : $company->manager->password,
         ]);
         $company->update([
@@ -62,8 +63,48 @@ class CompanyService
         ]);
 
         return [
-            'data' => $company,
+            'data' => $company->load('manager'),
             'message' => 'Company updated successfully',
+            'code' => 200,
+        ];
+    }
+    public function deleteCompany($companyId)
+    {
+        $company = Company::find($companyId);
+
+        if (!$company) {
+            return [
+                'data' => null,
+                'message' => 'Company not found',
+                'code' => 404,
+            ];
+        }
+
+        $company->delete();
+
+        return [
+            'data' => null,
+            'message' => 'Company deleted successfully',
+            'code' => 200,
+        ];
+    }
+    public function restoreCompany($companyId)
+    {
+        $company = Company::onlyTrashed()->find($companyId);
+
+        if (!$company) {
+            return [
+                'data' => null,
+                'message' => 'Company not found',
+                'code' => 404,
+            ];
+        }
+
+        $company->restore();
+
+        return [
+            'data' => $company->load('manager'),
+            'message' => 'Company restored successfully',
             'code' => 200,
         ];
     }

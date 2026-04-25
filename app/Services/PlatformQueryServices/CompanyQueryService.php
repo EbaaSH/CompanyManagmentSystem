@@ -11,6 +11,7 @@ class CompanyQueryService
         $user = auth()->user();
         $company = Company::query()
             ->forUserViaPermission($user)
+            ->withTrashed()
             ->with([
                 'manager',
                 'branches',
@@ -40,6 +41,7 @@ class CompanyQueryService
 
         $companies = Company::query()
             ->forUserViaPermission($user)
+            ->withTrashed()
             ->with([
                 'manager',
                 'branches',

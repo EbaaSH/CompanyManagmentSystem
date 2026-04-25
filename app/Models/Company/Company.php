@@ -11,13 +11,30 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Company extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = ['name', 'legal_name', 'email', 'phone', 'status', 'user_id'];
 
+
+    protected static function booted()
+    {
+        // When deleting company → delete manager
+        static::deleting(function ($company) {
+            if ($company->isForceDeleting()) {
+                return;
+            }
+            $company->manager?->delete();
+        });
+
+        // When restoring company → restore manager
+        static::restoring(function ($company) {
+            $company->manager()->withTrashed()->restore();
+        });
+    }
 
     // ─── Relationships ────────────────────────────────────────────────
 
@@ -65,8 +82,8 @@ class Company extends Model
     {
         return match (true) {
             $user->hasRole('super-admin') => $query,
-            $user->hasRole('company-manager') => $query->where('user_id', $user->id),
-            $user->hasRole('customer') => $query->where('status', 'active'),
+            $user->hasRole('company-manager') => $query->where('user_id', $user->id)->where('deleted_at', null),
+            $user->hasRole('customer') => $query->where('status', 'active')->where('deleted_at', null),
             default => $query->whereRaw('0 = 1'),
         };
     }
