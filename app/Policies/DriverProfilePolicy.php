@@ -29,41 +29,41 @@ class DriverProfilePolicy
     }
 
     // Company-manager and branch-manager create drivers
-    public function create(User $user): bool
-    {
-        return $user->can('drivers.write');
-    }
+    // public function create(User $user): bool
+    // {
+    //     return $user->can('drivers.write');
+    // }
 
-    public function update(User $user, DriverProfile $driver): bool
-    {
-        if (! $user->can('drivers.write')) {
-            return false;
-        }
+    // public function update(User $user, DriverProfile $driver): bool
+    // {
+    //     if (! $user->can('drivers.write')) {
+    //         return false;
+    //     }
 
-        if ($user->can('drivers.scope.company')) {
-            return $driver->company_id === $user->resolveCompanyId();
-        }
+    //     if ($user->can('drivers.scope.company')) {
+    //         return $driver->company_id === $user->resolveCompanyId();
+    //     }
 
-        if ($user->can('drivers.scope.branch') && $user->ownedBranch) {
-            return $driver->branch_id === $user->ownedBranch->id;
-        }
+    //     if ($user->can('drivers.scope.branch') && $user->ownedBranch) {
+    //         return $driver->branch_id === $user->ownedBranch->id;
+    //     }
 
-        return false;
-        // Note: driver updating their own location/availability is
-        // handled directly in DeliveryService without a policy check
-        // since it's always self-referential (driverProfile->update).
-    }
+    //     return false;
+    //     // Note: driver updating their own location/availability is
+    //     // handled directly in DeliveryService without a policy check
+    //     // since it's always self-referential (driverProfile->update).
+    // }
 
-    public function delete(User $user, DriverProfile $driver): bool
-    {
-        if (! $user->can('drivers.write')) {
-            return false;
-        }
+    // public function delete(User $user, DriverProfile $driver): bool
+    // {
+    //     if (! $user->can('drivers.write')) {
+    //         return false;
+    //     }
 
-        if ($user->can('drivers.scope.company')) {
-            return $driver->company_id === $user->resolveCompanyId();
-        }
+    //     if ($user->can('drivers.scope.company')) {
+    //         return $driver->company_id === $user->resolveCompanyId();
+    //     }
 
-        return false;
-    }
+    //     return false;
+    // }
 }

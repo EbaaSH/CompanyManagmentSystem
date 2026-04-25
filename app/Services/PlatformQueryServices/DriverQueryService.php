@@ -11,12 +11,15 @@ class DriverQueryService
         $user = auth()->user();
         $driver = DriverProfile::query()
             ->forUserViaPermission($user)
-            ->with('user',
+            ->withTrashed()
+            ->with(
+                'user',
                 'company',
                 'branch',
                 'orders',
-                'deliveries')->find($driverId);
-        if (! $driver) {
+                'deliveries'
+            )->find($driverId);
+        if (!$driver) {
             return [
                 'data' => null,
                 'message' => 'driver not found',
@@ -37,12 +40,15 @@ class DriverQueryService
         $user = auth()->user();
         $driver = DriverProfile::query()
             ->forUserViaPermission($user)
-            ->with('user',
+            ->withTrashed()
+            ->with(
+                'user',
                 'company',
                 'branch',
                 'orders',
-                'deliveries')->paginate(10);
-        if (! $driver) {
+                'deliveries'
+            )->paginate(10);
+        if (!$driver) {
             return [
                 'data' => null,
                 'message' => 'driver not found',

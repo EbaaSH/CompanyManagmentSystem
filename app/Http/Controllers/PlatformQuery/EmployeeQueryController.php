@@ -19,10 +19,13 @@ class EmployeeQueryController extends Controller
 
     public function index()
     {
-        $user = auth()->user();
-        $this->authorize('viewAny', EmployeeProfile::class);
         try {
+            $this->authorize('viewAny', EmployeeProfile::class);
             $data = $this->queryService->getAllEmployees();
+
+            if ($data['code'] !== 200) {
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
 
             return Response::Paginate($data['data'], $data['message'], $data['code']);
         } catch (Throwable $th) {
@@ -32,17 +35,17 @@ class EmployeeQueryController extends Controller
 
     public function show($id)
     {
-        $employee = EmployeeProfile::find($id);
-        if (! $employee) {
-            return Response::Error(null, 'employee not found', 404);
-        }
-        $this->authorize('view', $employee);
         try {
+            $user = auth()->user();
+            $employee = EmployeeProfile::query()->ForUserViaPermission($user)->find($id);
+            if (!$employee) {
+                return Response::Error(null, 'employee not found', 404);
+            }
+            $this->authorize('view', $employee);
             $data = $this->queryService->getEmployeeById($id);
             if ($data['code'] === 200) {
                 return Response::Success($data['data'], $data['message'], $data['code']);
             }
-
             return Response::Error($data['data'], $data['message'], $data['code']);
         } catch (Throwable $th) {
             return Response::Error([], $th->getMessage());

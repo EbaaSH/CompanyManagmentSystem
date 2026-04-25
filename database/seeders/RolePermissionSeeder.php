@@ -54,7 +54,8 @@ class RolePermissionSeeder extends Seeder
             'employees.scope.all',
             'employees.scope.company',
             'employees.scope.branch',
-            'employees.scope.none',
+            'employees.scope.own',
+            // 'employees.scope.none',
             'employees.write',
             'employees.update',
             'employees.delete',
@@ -192,7 +193,7 @@ class RolePermissionSeeder extends Seeder
         // Cannot list other employees.
         Role::firstOrCreate(['name' => 'employee', 'guard_name' => $guard])
             ->syncPermissions([
-                'employees.scope.none',     // no employee directory access
+                'employees.scope.own',     // no employee directory access
                 'drivers.scope.branch',
                 'customers.scope.branch',
                 'orders.scope.branch',

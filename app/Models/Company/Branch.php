@@ -48,16 +48,16 @@ class Branch extends Model
         });
 
         static::restoring(function ($branch) {
-            $branch->manager?->restore();
+            $branch->manager()?->restore();
 
             foreach ($branch->employees()->withTrashed()->get() as $employee) {
                 $employee->restore();
-                $employee->user?->restore();
+                $employee->user()?->restore();
             }
 
             foreach ($branch->drivers()->withTrashed()->get() as $driver) {
                 $driver->restore();
-                $driver->user?->restore();
+                $driver->user()?->restore();
             }
         });
     }

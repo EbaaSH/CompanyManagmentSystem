@@ -56,16 +56,16 @@ class EmployeeProfile extends Model
      * driver          → employees in their current branch (they work together)
      * customer        → no access
      */
-    public function scopeForUser(Builder $query, User $user): Builder
-    {
-        return match (true) {
-            $user->hasRole('super-admin') => $query,
-            $user->hasRole('company-manager') => $query->where('company_id', $user->ownedCompany->id),
-            $user->hasRole('branch-manager') => $query->where('branch_id', $user->ownedBranch->id),
-            $user->hasRole('driver') => $query->where('branch_id', $user->driverProfile->branch_id),
-            default => $query->whereRaw('0 = 1'),
-        };
-    }
+    // public function scopeForUser(Builder $query, User $user): Builder
+    // {
+    //     return match (true) {
+    //         $user->hasRole('super-admin') => $query,
+    //         $user->hasRole('company-manager') => $query->where('company_id', $user->ownedCompany->id),
+    //         $user->hasRole('branch-manager') => $query->where('branch_id', $user->ownedBranch->id),
+    //         $user->hasRole('driver') => $query->where('branch_id', $user->driverProfile->branch_id),
+    //         default => $query->whereRaw('0 = 1'),
+    //     };
+    // }
 
     /**
      * TECHNIQUE 2 — Permissions
@@ -76,6 +76,7 @@ class EmployeeProfile extends Model
             $user->can('employees.scope.all') => $query,
             $user->can('employees.scope.company') => $query->where('company_id', $user->resolveCompanyId()),
             $user->can('employees.scope.branch') => $query->where('branch_id', $user->resolveBranchId()),
+            $user->can('employees.scope.own') => $query->where('user_id', $user->id),
             default => $query->whereRaw('0 = 1'),
         };
     }

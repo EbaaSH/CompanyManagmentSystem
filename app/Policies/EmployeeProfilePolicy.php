@@ -23,44 +23,45 @@ class EmployeeProfilePolicy
             $user->can('employees.scope.all') => true,
             $user->can('employees.scope.company') => $employee->company_id === $user->resolveCompanyId(),
             $user->can('employees.scope.branch') => $employee->branch_id === $user->resolveBranchId(),
+            $user->can('employees.scope.own') => $employee->user_id === $user->id,
             default => false,
         };
     }
 
     // Company-manager and branch-manager create employees
-    public function create(User $user): bool
-    {
-        return $user->can('employees.write');
-    }
+    // public function create(User $user): bool
+    // {
+    //     return $user->can('employees.write');
+    // }
 
-    public function update(User $user, EmployeeProfile $employee): bool
-    {
-        if (! $user->can('employees.write')) {
-            return false;
-        }
+    // public function update(User $user, EmployeeProfile $employee): bool
+    // {
+    //     if (! $user->can('employees.write')) {
+    //         return false;
+    //     }
 
-        if ($user->can('employees.scope.company')) {
-            return $employee->company_id === $user->resolveCompanyId();
-        }
+    //     if ($user->can('employees.scope.company')) {
+    //         return $employee->company_id === $user->resolveCompanyId();
+    //     }
 
-        if ($user->can('employees.scope.branch')) {
-            return $employee->branch_id === $user->resolveBranchId();
-        }
+    //     if ($user->can('employees.scope.branch')) {
+    //         return $employee->branch_id === $user->resolveBranchId();
+    //     }
 
-        return false;
-    }
+    //     return false;
+    // }
 
-    public function delete(User $user, EmployeeProfile $employee): bool
-    {
-        if (! $user->can('employees.write')) {
-            return false;
-        }
+    // public function delete(User $user, EmployeeProfile $employee): bool
+    // {
+    //     if (! $user->can('employees.write')) {
+    //         return false;
+    //     }
 
-        // Company-manager can delete employees in their company
-        if ($user->can('employees.scope.company')) {
-            return $employee->company_id === $user->resolveCompanyId();
-        }
+    //     // Company-manager can delete employees in their company
+    //     if ($user->can('employees.scope.company')) {
+    //         return $employee->company_id === $user->resolveCompanyId();
+    //     }
 
-        return false;
-    }
+    //     return false;
+    // }
 }

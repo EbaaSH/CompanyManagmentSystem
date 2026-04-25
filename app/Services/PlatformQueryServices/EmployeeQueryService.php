@@ -11,14 +11,16 @@ class EmployeeQueryService
         $user = auth()->user();
         $employee = EmployeeProfile::query()
             ->ForUserViaPermission($user)
-            ->with('user',
+            ->withTrashed()
+            ->with(
+                'user',
                 'company',
                 'branch',
                 'jobTitle',
                 'shift'
             )
             ->find($employeeId);
-        if (! $employee) {
+        if (!$employee) {
             return [
                 'data' => $employee,
                 'message' => 'employee not found',
@@ -38,6 +40,7 @@ class EmployeeQueryService
         $user = auth()->user();
         $employees = EmployeeProfile::query()
             ->forUserViaPermission($user)
+            ->withTrashed()
             ->with(
                 'user',
                 'company',
