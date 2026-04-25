@@ -21,12 +21,36 @@ class StoreCompanyRequest extends FormRequest
             'name' => 'required|string|max:150',
             'legal_name' => 'required|string|max:150',
             'email' => 'required|email|unique:companies,email',
-            'phone' => 'required|string|max:30',
+            'phone' => [
+                'required',
+                'string',
+                'max:30',
+                function ($attribute, $value, $fail) {
+                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
+                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+
+                    if ($existsInUsers || $existsInCompanies) {
+                        $fail('This phone number is already in use.');
+                    }
+                }
+            ],
             'status' => 'nullable|in:active,inactive',
 
             // Manager Info
             'manager_name' => 'required|string|max:150',
-            'manager_phone' => 'required|string|max:20',
+            'manager_phone' => [
+                'required',
+                'string',
+                'max:30',
+                function ($attribute, $value, $fail) {
+                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
+                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+
+                    if ($existsInUsers || $existsInCompanies) {
+                        $fail('This phone number is already in use.');
+                    }
+                }
+            ],
             'manager_email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
         ];

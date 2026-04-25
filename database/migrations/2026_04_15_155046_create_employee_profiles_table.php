@@ -20,6 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('shift_id');
             $table->date('hire_date');
             $table->tinyInteger('is_active')->default(1);
+            $table->softDeletes();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

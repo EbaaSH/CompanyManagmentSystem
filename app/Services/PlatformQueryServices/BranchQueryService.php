@@ -11,6 +11,7 @@ class BranchQueryService
         $user = auth()->user();
         $branch = Branch::query()
             ->ForUserViaPermission($user)
+            ->withTrashed()
             ->with([
                 'branchTimeHistories.weekDays',
                 'branchTimeHistories',
@@ -25,7 +26,7 @@ class BranchQueryService
             ])
             ->where('id', $branchId)
             ->first();
-        if (! $branch) {
+        if (!$branch) {
             return [
                 'data' => null,
                 'message' => 'branch not found',
@@ -45,6 +46,7 @@ class BranchQueryService
         $user = auth()->user();
         $branch = Branch::query()
             ->ForUserViaPermission($user)
+            ->withTrashed()
             ->with([
                 'branchTimeHistories.weekDays',
                 'branchTimeHistories',

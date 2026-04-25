@@ -23,12 +23,36 @@ class UpdateCompanyRequest extends FormRequest
             'name' => 'sometimes|string|max:150',
             'legal_name' => 'sometimes|string|max:150',
             'email' => "sometimes|email|unique:companies,email,{$companyId}",
-            'phone' => 'sometimes|string|max:30',
+            'phone' => [
+                'sometimes',
+                'string',
+                'max:30',
+                function ($attribute, $value, $fail) {
+                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
+                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+
+                    if ($existsInUsers || $existsInCompanies) {
+                        $fail('This phone number is already in use.');
+                    }
+                }
+            ],
             'status' => 'sometimes|in:active,inactive',
 
             // Manager Info
             'manager_name' => 'sometimes|string|max:150',
-            'manager_phone' => 'sometimes|string|max:20',
+            'manager_phone' => [
+                'sometimes',
+                'string',
+                'max:30',
+                function ($attribute, $value, $fail) {
+                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
+                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+
+                    if ($existsInUsers || $existsInCompanies) {
+                        $fail('This phone number is already in use.');
+                    }
+                }
+            ],
             'manager_email' => "sometimes|email|unique:users,email,{$this->user()->id}",
             'password' => "sometimes|string|min:8",
         ];

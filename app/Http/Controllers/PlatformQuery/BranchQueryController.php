@@ -19,12 +19,12 @@ class BranchQueryController extends Controller
 
     public function index()
     {
-
-        $user = auth()->user();
-        $this->authorize('viewAnyViaPermission', Branch::class);
         try {
+            $this->authorize('viewAny', Branch::class);
             $data = $this->queryService->getAllBranches();
-
+            if ($data['code'] !== 200) {
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
             return Response::Paginate($data['data'], $data['message'], $data['code']);
         } catch (Throwable $th) {
             return Response::Error([], $th->getMessage());
@@ -33,12 +33,16 @@ class BranchQueryController extends Controller
 
     public function show($id)
     {
-        $branch = Branch::find($id);
-        if (! $branch) {
-            return Response::Error(null, 'branch not found', 404);
-        }
-        $this->authorize('viewViaPermission', $branch);
         try {
+            $user = auth()->user();
+            $branch = Branch::query()
+                ->forUserViaPermission($user)
+                ->withTrashed()
+                ->find($id);
+            if (!$branch) {
+                return Response::Error(null, 'branch not found', 404);
+            }
+            $this->authorize('view', $branch);
             $data = $this->queryService->getBranchById($id);
             if ($data['code'] === 200) {
                 return Response::Success($data['data'], $data['message'], $data['code']);

@@ -12,10 +12,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Branch extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = ['user_id', 'company_id', 'name', 'code', 'address', 'city', 'latitude', 'longitude', 'phone', 'is_active'];
 
@@ -25,6 +26,40 @@ class Branch extends Model
             BranchTimeHistory::class,
             'branch_id',
         );
+    }
+
+    protected static function booted()
+    {
+        static::deleting(function ($branch) {
+            if (!$branch->isForceDeleting()) {
+
+                $branch->manager?->delete();
+
+                foreach ($branch->employees as $employee) {
+                    $employee->user?->delete();
+                    $employee->delete();
+                }
+
+                foreach ($branch->drivers as $driver) {
+                    $driver->user?->delete();
+                    $driver->delete();
+                }
+            }
+        });
+
+        static::restoring(function ($branch) {
+            $branch->manager?->restore();
+
+            foreach ($branch->employees()->withTrashed()->get() as $employee) {
+                $employee->restore();
+                $employee->user?->restore();
+            }
+
+            foreach ($branch->drivers()->withTrashed()->get() as $driver) {
+                $driver->restore();
+                $driver->user?->restore();
+            }
+        });
     }
 
     // ─── Relationships ────────────────────────────────────────────────
@@ -71,18 +106,18 @@ class Branch extends Model
      * driver          → only their currently assigned branch
      * customer        → all active branches
      */
-    public function scopeForUser(Builder $query, User $user): Builder
-    {
-        return match (true) {
-            $user->hasRole('super-admin') => $query,
-            $user->hasRole('company-manager') => $query->where('company_id', $user->ownedCompany->id),
-            $user->hasRole('branch-manager') => $query->where('user_id', $user->id),
-            $user->hasRole('employee') => $query->where('id', $user->employeeProfile->branch_id),
-            $user->hasRole('driver') => $query->where('id', $user->driverProfile->branch_id),
-            $user->hasRole('customer') => $query->where('is_active', 1),
-            default => $query->whereRaw('0 = 1'),
-        };
-    }
+    // public function scopeForUser(Builder $query, User $user): Builder
+    // {
+    //     return match (true) {
+    //         $user->hasRole('super-admin') => $query,
+    //         $user->hasRole('company-manager') => $query->where('company_id', $user->ownedCompany->id),
+    //         $user->hasRole('branch-manager') => $query->where('user_id', $user->id),
+    //         $user->hasRole('employee') => $query->where('id', $user->employeeProfile->branch_id),
+    //         $user->hasRole('driver') => $query->where('id', $user->driverProfile->branch_id),
+    //         $user->hasRole('customer') => $query->where('is_active', 1),
+    //         default => $query->whereRaw('0 = 1'),
+    //     };
+    // }
 
     /**
      * TECHNIQUE 2 — Permissions
@@ -92,8 +127,8 @@ class Branch extends Model
         return match (true) {
             $user->can('branches.scope.all') => $query,
             $user->can('branches.scope.company') => $query->where('company_id', $user->ownedCompany->id),
-            $user->can('branches.scope.own') => $this->scopeOwnBranch($query, $user),
-            $user->can('branches.scope.active') => $query->where('is_active', 1),
+            $user->can('branches.scope.own') => $this->scopeOwnBranch($query, $user)->where('deleted_at', null),
+            $user->can('branches.scope.active') => $query->where('is_active', 1)->where('deleted_at', null),
             default => $query->whereRaw('0 = 1'),
         };
     }

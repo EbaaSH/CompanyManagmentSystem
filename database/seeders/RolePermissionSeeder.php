@@ -47,6 +47,8 @@ class RolePermissionSeeder extends Seeder
             'branches.scope.own',
             'branches.scope.active',
             'branches.write',
+            'branches.update',
+            'branches.delete',
 
             // Employees
             'employees.scope.all',
@@ -54,6 +56,8 @@ class RolePermissionSeeder extends Seeder
             'employees.scope.branch',
             'employees.scope.none',
             'employees.write',
+            'employees.update',
+            'employees.delete',
 
             // Drivers
             'drivers.scope.all',
@@ -61,6 +65,8 @@ class RolePermissionSeeder extends Seeder
             'drivers.scope.branch',
             'drivers.scope.own',
             'drivers.write',
+            'drivers.update',
+            'drivers.delete',
 
             // Customers
             'customers.scope.all',
@@ -109,6 +115,7 @@ class RolePermissionSeeder extends Seeder
                 'companies.update',
                 'companies.delete',        // only role that can create/delete companies
                 'branches.scope.all',
+                // no branches.write
                 'employees.scope.all',
                 'drivers.scope.all',
                 'customers.scope.all',
@@ -126,18 +133,30 @@ class RolePermissionSeeder extends Seeder
         Role::firstOrCreate(['name' => 'company-manager', 'guard_name' => $guard])
             ->syncPermissions([
                 'companies.scope.own',
-                // 'companies.update',
+                // branches
                 'branches.scope.company',
                 'branches.write',
+                'branches.update',
+                'branches.delete',
+                // employees
                 'employees.scope.company',
                 'employees.write',
+                'employees.update',
+                'employees.delete',
+
                 'drivers.scope.company',
                 'drivers.write',
+                'drivers.update',
+                'drivers.delete',
+
                 'customers.scope.company',
+
                 'orders.scope.company',
                 'orders.write',
+
                 'deliveries.scope.company',
                 'deliveries.write',
+
                 'menus.scope.company',
                 'menus.write',
             ]);
@@ -148,17 +167,22 @@ class RolePermissionSeeder extends Seeder
         Role::firstOrCreate(['name' => 'branch-manager', 'guard_name' => $guard])
             ->syncPermissions([
                 'branches.scope.own',
+
                 'employees.scope.branch',
-                'employees.write',
+
                 'drivers.scope.branch',
-                'drivers.write',
+
                 'customers.scope.branch',
+
                 'orders.scope.branch',
                 'orders.write',
+
                 'deliveries.scope.branch',
                 'deliveries.write',
+
                 'menus.scope.branch',
                 'menus.write',
+
                 'orders.delete',
             ]);
 

@@ -51,7 +51,7 @@ Route::middleware(['auth:api'])
             Route::put('/{id}', [CompanyController::class, 'update']);
 
             Route::delete('/{id}', [CompanyController::class, 'delete']);
-            Route::post('/{id}/restore', [CompanyController::class, 'restore']);
+            Route::put('/{id}/restore', [CompanyController::class, 'restore']);
 
             Route::get('/', [CompanyQueryController::class, 'index']);
             Route::get('/{id}', [CompanyQueryController::class, 'show']);
@@ -66,6 +66,9 @@ Route::middleware(['auth:api'])
 
             Route::post('/', [BranchController::class, 'store']);
             Route::put('/{id}', [BranchController::class, 'update']);
+
+            Route::delete('/{id}', [BranchController::class, 'delete']);
+            Route::put('/{id}/restore', [BranchController::class, 'restore']);
 
             Route::get('/', [BranchQueryController::class, 'index']);
             Route::get('/{id}', [BranchQueryController::class, 'show']);

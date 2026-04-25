@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
             $table->string('phone');
+            $table->softDeletes();
             $table->tinyInteger('is_active')->default(1);
             $table->timestamps();
 
