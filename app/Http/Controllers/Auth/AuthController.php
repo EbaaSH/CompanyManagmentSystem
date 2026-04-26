@@ -139,4 +139,5 @@ class AuthController extends Controller
             return Response::Error($data, $message);
         }
     }
+    
 }

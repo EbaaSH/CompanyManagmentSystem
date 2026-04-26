@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Customer;
+namespace App\Http\Requests\Auth;
 
 use App\Http\Responses\Response;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -8,7 +8,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
 
-class UpdateCustomerRequest extends FormRequest
+class UpdateProfileRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,16 +26,9 @@ class UpdateCustomerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            
-
-            'addresses' => 'required|array|min:1',
-            'addresses.*.id' => 'nullable|exists:customer_addresses,id',
-            'addresses.*.label' => 'required|string|max:100',
-            'addresses.*.address_line' => 'required|string|max:255',
-            'addresses.*.city' => 'required|string|max:100',
-            'addresses.*.latitude' => 'required|numeric',
-            'addresses.*.longitude' => 'required|numeric',
-            'addresses.*.is_default' => 'nullable|boolean',
+            'name' => 'required|string|max:150',
+            'email' => 'required|email|unique:users,email,' . auth()->id(),
+            'phone' => 'required|string|max:30|unique:users,phone,' . auth()->id(),
         ];
     }
 

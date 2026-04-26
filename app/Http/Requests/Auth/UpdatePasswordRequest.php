@@ -1,14 +1,13 @@
 <?php
 
-namespace App\Http\Requests\Customer;
+namespace App\Http\Requests\Auth;
 
 use App\Http\Responses\Response;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
-
-class UpdatePasswordCustomerRequest extends FormRequest
+class UpdatePasswordRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -35,4 +34,5 @@ class UpdatePasswordCustomerRequest extends FormRequest
     {
         throw new ValidationException($validator, Response::Validation([], $validator->errors()));
     }
+
 }

@@ -27,6 +27,11 @@ class CustomerController extends Controller
         try {
             $data = $this->customerService->customerRegister($request);
 
+            if (!$data['code'] == 201) {
+                DB::rollBack();
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
+
             DB::commit();
 
             return Response::Success($data['data'], $data['message'], $data['code']);
@@ -39,19 +44,21 @@ class CustomerController extends Controller
 
     public function updateCustomer(UpdateCustomerRequest $request, $id)
     {
-        $customer = CustomerProfile::find($id);
-        if (! $customer) {
-            return [
-                'data' => null,
-                'message' => 'customer not found',
-                'code' => 404,
-            ];
-        }
-        $this->authorize('update', $customer);
-        DB::beginTransaction();
         try {
+            $user = auth()->user();
+            $customer = CustomerProfile::query()
+                ->forUserViaPermission($user)
+                ->find($id);
+            if (!$customer) {
+                return Response::Error(null, 'customer not found', 404);
+            }
+            $this->authorize('update', $customer);
+            DB::beginTransaction();
             $data = $this->customerService->updateCustomer($request, $id);
-
+            if ($data['code'] !== 200) {
+                DB::rollBack();
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
             DB::commit();
 
             return Response::Success($data['data'], $data['message'], $data['code']);
@@ -62,28 +69,5 @@ class CustomerController extends Controller
         }
     }
 
-    public function updatePassword(UpdatePasswordCustomerRequest $request, $id)
-    {
-        $customer = CustomerProfile::find($id);
-        if (! $customer) {
-            return [
-                'data' => null,
-                'message' => 'customer not found',
-                'code' => 404,
-            ];
-        }
-        $this->authorize('update', $customer);
-        DB::beginTransaction();
-        try {
-            $data = $this->customerService->updatePassword($request, $id);
-
-            DB::commit();
-
-            return Response::Success($data['data'], $data['message'], $data['code']);
-        } catch (Throwable $th) {
-            DB::rollBack();
-
-            return Response::Error([], $th->getMessage());
-        }
-    }
+    
 }

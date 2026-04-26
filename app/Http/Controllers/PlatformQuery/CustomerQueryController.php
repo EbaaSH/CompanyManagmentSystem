@@ -19,9 +19,12 @@ class CustomerQueryController extends Controller
 
     public function index()
     {
-        $this->authorize('viewAny', CustomerProfile::class);
         try {
+            $this->authorize('viewAny', CustomerProfile::class);
             $data = $this->queryService->getAllCustomers();
+            if ($data['code'] !== 200) {
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
 
             return Response::Paginate($data['data'], $data['message'], $data['code']);
         } catch (Throwable $th) {
@@ -31,22 +34,21 @@ class CustomerQueryController extends Controller
 
     public function show($id)
     {
-        $customer = CustomerProfile::find($id);
-        if (! $customer) {
-            return [
-                'data' => null,
-                'message' => 'customer not found',
-                'code' => 404,
-            ];
-        }
-        $this->authorize('view', $customer);
         try {
+            $user = auth()->user();
+            $customer = CustomerProfile::query()
+            ->forUserViaPermission($user)
+            ->find($id);
+            if (!$customer) {
+                return Response::Error(null, 'customer not found', 404);
+            }
+            $this->authorize('view', $customer);
             $data = $this->queryService->getCustomerById($id);
-            if ($data['code'] === 200) {
-                return Response::Success($data['data'], $data['message'], $data['code']);
+            if ($data['code'] !== 200) {
+                return Response::Error($data['data'], $data['message'], $data['code']);
             }
 
-            return Response::Error($data['data'], $data['message'], $data['code']);
+            return Response::Success($data['data'], $data['message'], $data['code']);
         } catch (Throwable $th) {
             return Response::Error([], $th->getMessage());
         }

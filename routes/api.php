@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OtpController;
+use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\BranchManager\MenuController;
 use App\Http\Controllers\CompanyManager\BranchController;
 use App\Http\Controllers\Customer\CustomerController;
@@ -42,6 +43,17 @@ Route::group([
     Route::post('/verify', [OtpController::class, 'verify'])->middleware('auth:api');
     Route::post('/resend', [OtpController::class, 'resendCode'])->middleware('auth:api');
 });
+Route::middleware(['auth:api'])
+    ->group(function () {
+
+        Route::prefix('profile')->group(function () {
+
+            Route::put('/update', [ProfileController::class, 'updateProfile']);
+            Route::put('/update-password', [ProfileController::class, 'updatePassword']);
+            
+        });
+    });
+    
 Route::middleware(['auth:api'])
     ->group(function () {
 
@@ -105,13 +117,13 @@ Route::middleware(['auth:api'])
         });
     });
 
-    
-    Route::post('customers/register', [CustomerController::class, 'registerCustomer']);
+// Customer    
+Route::post('customers/register', [CustomerController::class, 'registerCustomer']);
 Route::middleware(['auth:api'])
     ->group(function () {
         Route::prefix('customers')->group(function () {
             Route::put('/updateProfile/{id}', [CustomerController::class, 'updateCustomer']);
-            Route::put('/updatePassword/{id}', [CustomerController::class, 'updatePassword']);
+
             Route::get('/', [CustomerQueryController::class, 'index']);
             Route::get('/{id}', [CustomerQueryController::class, 'show']);
 

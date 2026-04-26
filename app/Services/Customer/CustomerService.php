@@ -27,7 +27,7 @@ class CustomerService
             'password' => Hash::make($request->password),
         ]);
 
-        $user->assignRole('Customer');
+        $user->assignRole('customer');
 
         // $this->otpService->sendOtp($user->phone);
 
@@ -53,10 +53,10 @@ class CustomerService
         }
 
         $data =
-        [
-            'customer' => $customer->load('user', 'addresses'),
-            'token' => $token,
-        ];
+            [
+                'customer' => $customer->load('user', 'addresses'),
+                'token' => $token,
+            ];
 
         return [
             'data' => $data,
@@ -73,7 +73,7 @@ class CustomerService
             ->with('user', 'addresses')
             ->find($id);
 
-        if (! $customer) {
+        if (!$customer) {
             return [
                 'data' => null,
                 'message' => 'customer not found',
@@ -81,13 +81,13 @@ class CustomerService
             ];
         }
 
-        // 1. Update user
-        $customer->user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone,
+        // // 1. Update user
+        // $customer->user->update([
+        //     'name' => $request->name,
+        //     'email' => $request->email,
+        //     'phone' => $request->phone,
 
-        ]);
+        // ]);
 
         // 2. Update addresses (update or create)
         foreach ($request->addresses as $addressData) {
@@ -115,38 +115,5 @@ class CustomerService
         ];
     }
 
-    public function updatePassword($request, $id)
-    {
-        $user = auth()->user();
-        $customer = CustomerProfile::query()
-            ->forUserViaPermission($user)
-            ->with('user', 'addresses')
-            ->find($id);
 
-        if (! $customer) {
-            return [
-                'data' => null,
-                'message' => 'customer updated successfully',
-                'code' => 404,
-            ];
-        }
-        // Verify old password
-        if (! Hash::check($request->old_password, $customer->user->password)) {
-            return [
-                'data' => null,
-                'message' => 'Old password is incorrect',
-                'code' => 400,
-            ];
-        }
-
-        $customer->user->update([
-            'password' => Hash::make($request->new_password),
-        ]);
-
-        return [
-            'data' => $customer,
-            'message' => 'password updated',
-            'code' => 200,
-        ];
-    }
 }
