@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -18,6 +17,7 @@ return new class extends Migration
             $table->integer('min_select')->default(0);
             $table->integer('max_select')->default(1);
             $table->tinyInteger('is_required')->default(0);
+            $table->softDeletes();
             $table->timestamps();
 
             $table->foreign('item_id')->references('id')->on('menu_items')->onDelete('cascade');

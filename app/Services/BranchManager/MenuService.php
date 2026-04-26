@@ -18,6 +18,13 @@ class MenuService
     {
         $user = auth()->user();
         $branch = $user->ownedBranch;
+        if (!$branch) {
+            return [
+                'data' => null,
+                'message' => 'Branch not found for this user',
+                'code' => 404,
+            ];
+        }
         $menu = Menu::create([
             'branch_id' => $branch->id,
             'name' => $request->name,
@@ -38,7 +45,7 @@ class MenuService
                 $item = MenuItem::create([
                     'category_id' => $category->id,
                     'name' => $itemData['name'],
-                    'description' => $itemData['description'],
+                    'description' => $itemData['description'] ?? null,
                     'image_url' => $path['data'] ?? '',
                     'price' => $itemData['price'],
                     'preparation_time_minutes' => $itemData['preparation_time_minutes'],
@@ -47,12 +54,13 @@ class MenuService
                 // ========================
                 $requestFileKey = "categories.$cindex.items.$iindex.image";
 
-                $path = $this->uploadImage($request,
+                $path = $this->uploadImage(
+                    $request,
                     "menus/{$menu->id}/items/{$item->name}",
                     $requestFileKey
                 );
 
-                if (! $path['success']) {
+                if (!$path['success']) {
                     return [
                         'data' => null,
                         'message' => $path['message'] ?? "File upload failed at index {$iindex}",
@@ -62,7 +70,7 @@ class MenuService
                 // =======================
 
                 // Option Groups
-                if (! empty($itemData['option_groups'])) {
+                if (!empty($itemData['option_groups'])) {
                     foreach ($itemData['option_groups'] as $groupData) {
 
                         $group = ItemOptionGroup::create([
@@ -74,7 +82,7 @@ class MenuService
                         ]);
 
                         // Options
-                        if (! empty($groupData['options'])) {
+                        if (!empty($groupData['options'])) {
                             foreach ($groupData['options'] as $optionData) {
 
                                 ItemOption::create([
@@ -97,8 +105,8 @@ class MenuService
                 'categories.menuItems.itemOptionGroups',
                 'categories.menuItems.itemOptionGroups.itemOptions'
             ),
-            'message' => 'menu updated successfully',
-            'code' => 200,
+            'message' => 'menu created successfully',
+            'code' => 201,
 
         ];
     }
@@ -108,9 +116,10 @@ class MenuService
         $user = auth()->user();
         $branch = $user->ownedBranch;
 
-        $menu = Menu::where('id', $menuId)
+        $menu = Menu::query()
+            ->forUserViaPermission($user)
             ->where('branch_id', $branch->id)
-            ->first();
+            ->find($menuId);
 
         $menu->update([
             'name' => $request->name,
@@ -131,25 +140,28 @@ class MenuService
 
             foreach ($categoryData['items'] as $iIndex => $itemData) {
 
-                $item = MenuItem::updateOrCreate(
-                    ['id' => $itemData['id'] ?? null],
-                    [
-                        'category_id' => $category->id,
-                        'name' => $itemData['name'],
-                        'description' => $itemData['description'] ?? null,
-                        'price' => $itemData['price'],
-                        'preparation_time_minutes' => $itemData['preparation_time_minutes'],
-                    ]
-                );
+                $existingItem = null;
 
-                // 🔥 IMAGE HANDLING
+                if (!empty($itemData['id'])) {
+                    $existingItem = MenuItem::find($itemData['id']);
+                }
+
                 $fileKey = "categories.$cIndex.items.$iIndex.image";
+                $imagePath = $existingItem->image_url ?? ""; // ✅ keep old image by default
+
+                if (!$existingItem && !$request->hasFile($fileKey)) {
+                    return [
+                        'data' => null,
+                        'message' => 'Image is required for new item',
+                        'code' => 422
+                    ];
+                }
 
                 if ($request->hasFile($fileKey)) {
 
                     // delete old image
-                    if ($item->image_url && Storage::exists($item->image_url)) {
-                        Storage::delete($item->image_url);
+                    if ($existingItem && $existingItem->image_url && Storage::exists($existingItem->image_url)) {
+                        Storage::delete($existingItem->image_url);
                     }
 
                     // upload new
@@ -159,17 +171,35 @@ class MenuService
                         $fileKey
                     );
 
-                    if (! $upload['success']) {
-                        throw new \Exception($upload['message']);
+                    if (!$upload['success']) {
+                        return [
+                            'data' => null,
+                            'message' => 'file upload failed',
+                            'code' => 400
+                        ];
                     }
 
-                    $item->update([
-                        'image_url' => $upload['data'],
-                    ]);
+                    $imagePath = $upload['data']; // ✅ new image
                 }
 
+                $item = MenuItem::updateOrCreate(
+                    ['id' => $itemData['id'] ?? null],
+                    [
+                        'category_id' => $category->id,
+                        'name' => $itemData['name'],
+                        'description' => $itemData['description'] ?? null,
+                        'image_url' => $imagePath, // ✅ never lost
+                        'price' => $itemData['price'],
+                        'preparation_time_minutes' => $itemData['preparation_time_minutes'],
+                    ]
+                );
+
+
+
+
+
                 // OPTION GROUPS (same as before)
-                if (! empty($itemData['option_groups'])) {
+                if (!empty($itemData['option_groups'])) {
                     foreach ($itemData['option_groups'] as $groupData) {
 
                         $group = ItemOptionGroup::updateOrCreate(
@@ -183,7 +213,7 @@ class MenuService
                             ]
                         );
 
-                        if (! empty($groupData['options'])) {
+                        if (!empty($groupData['options'])) {
                             foreach ($groupData['options'] as $optionData) {
 
                                 ItemOption::updateOrCreate(
@@ -214,6 +244,57 @@ class MenuService
             'message' => 'menu updated successfully',
             'code' => 200,
 
+        ];
+    }
+    public function deleteMenu($menuId)
+    {
+        $user = auth()->user();
+
+        $menu = Menu::query()
+            ->forUserViaPermission($user)
+            ->find($menuId);
+
+        if (!$menu) {
+            return [
+                'data' => null,
+                'message' => 'Menu not found',
+                'code' => 404,
+            ];
+        }
+
+        $menu->delete(); // 🔥 cascade handled in model
+
+        return [
+            'data' => null,
+            'message' => 'Menu deleted successfully',
+            'code' => 200,
+        ];
+    }
+    public function restoreMenu($menuId)
+    {
+        $user = auth()->user();
+
+        $menu = Menu::query()
+            ->forUserViaPermission($user)
+            ->withTrashed()
+            ->find($menuId);
+
+        if (!$menu) {
+            return [
+                'data' => null,
+                'message' => 'Menu not found',
+                'code' => 404,
+            ];
+        }
+
+        $menu->restore(); // 🔥 cascade handled in model
+
+        return [
+            'data' => $menu->load(
+                'categories.menuItems.itemOptionGroups.itemOptions'
+            ),
+            'message' => 'Menu restored successfully',
+            'code' => 200,
         ];
     }
 }

@@ -10,11 +10,11 @@ class MenuQueryService
     {
 
         $user = auth()->user();
-        $branch = $user->ownedBranch;
+        // $branch = $user->ownedBranch;
         $menu = Menu::forUserViaPermission($user)
-            ->where('branch_id', $branch->id)
+            ->withTrashed()
             ->find($id);
-        if (! $menu) {
+        if (!$menu) {
             return [
                 'data' => $menu,
                 'message' => 'menu not found',
@@ -39,11 +39,14 @@ class MenuQueryService
     {
         $user = auth()->user();
         $menu = Menu::forUserViaPermission($user)
-            ->with('branch',
+            ->with(
+                'branch',
                 'categories',
                 'categories.menuItems',
                 'categories.menuItems.itemOptionGroups',
-                'categories.menuItems.itemOptionGroups.itemOptions')
+                'categories.menuItems.itemOptionGroups.itemOptions'
+            )
+            ->withTrashed()
             ->paginate(10);
 
         return [

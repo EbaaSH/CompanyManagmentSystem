@@ -97,6 +97,8 @@ class RolePermissionSeeder extends Seeder
             'menus.scope.branch',
             'menus.scope.active_now',
             'menus.write',
+            'menus.update',
+            'menus.delete',
         ];
 
         foreach ($permissions as $permission) {
@@ -159,7 +161,9 @@ class RolePermissionSeeder extends Seeder
                 'deliveries.write',
 
                 'menus.scope.company',
-                'menus.write',
+                // 'menus.write',
+                'menus.update',
+                'menus.delete',
             ]);
 
         // ── branch-manager ───────────────────────────────────────────
@@ -183,6 +187,8 @@ class RolePermissionSeeder extends Seeder
 
                 'menus.scope.branch',
                 'menus.write',
+                'menus.update',
+                'menus.delete',
 
                 'orders.delete',
             ]);

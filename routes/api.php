@@ -97,13 +97,16 @@ Route::middleware(['auth:api'])
             Route::post('/', [MenuController::class, 'store']);
             Route::put('/{id}', [MenuController::class, 'update']);
 
+            Route::delete('/{id}', [MenuController::class, 'delete']);
+            Route::put('/{id}/restore', [MenuController::class, 'restore']);
+
             Route::get('/', [MenuQueryController::class, 'index']);
             Route::get('/{id}', [MenuQueryController::class, 'show']);
         });
     });
 
-Route::post('customers/register', [CustomerController::class, 'registerCustomer']);
-
+    
+    Route::post('customers/register', [CustomerController::class, 'registerCustomer']);
 Route::middleware(['auth:api'])
     ->group(function () {
         Route::prefix('customers')->group(function () {

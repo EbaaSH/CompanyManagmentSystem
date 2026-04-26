@@ -19,10 +19,12 @@ class MenuQueryController extends Controller
 
     public function index()
     {
-        $user = auth()->user();
-        $this->authorize('viewAny', Menu::class);
         try {
+            $this->authorize('viewAny', Menu::class);
             $data = $this->queryService->getAllMenus();
+            if ($data['code'] !== 200) {
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
 
             return Response::Paginate($data['data'], $data['message'], $data['code']);
         } catch (Throwable $th) {
@@ -32,18 +34,21 @@ class MenuQueryController extends Controller
 
     public function show($id)
     {
-        $menu = Menu::find($id);
-        if (! $menu) {
-            return Response::Error(null, 'employee not found', 404);
-        }
-        $this->authorize('view', $menu);
         try {
+            $user = auth()->user();
+            $menu = Menu::query()
+                ->ForUserViaPermission($user)
+                ->find($id);
+            if (!$menu) {
+                return Response::Error(null, 'employee not found', 404);
+            }
+            $this->authorize('view', $menu);
             $data = $this->queryService->getMenuById($id);
-            if ($data['code'] === 200) {
-                return Response::Success($data['data'], $data['message'], $data['code']);
+            if ($data['code'] !== 200) {
+                return Response::Error($data['data'], $data['message'], $data['code']);
             }
 
-            return Response::Error($data['data'], $data['message'], $data['code']);
+            return Response::Success($data['data'], $data['message'], $data['code']);
         } catch (Throwable $th) {
             return Response::Error([], $th->getMessage());
         }

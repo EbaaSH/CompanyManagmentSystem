@@ -14,7 +14,7 @@ class StoreMenuRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->can('menus.write');
     }
 
     public function rules(): array
@@ -33,8 +33,8 @@ class StoreMenuRequest extends FormRequest
             // 🔹 Items
             'categories.*.items' => 'required|array|min:1',
             'categories.*.items.*.name' => 'required|string|max:150',
-            'categories.*.items.*.description' => 'nullable|string',
-            'categories.*.items.*.image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'categories.*.items.*.description' => 'required|string',
+            'categories.*.items.*.image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
             'categories.*.items.*.price' => 'required|numeric|min:0',
             'categories.*.items.*.preparation_time_minutes' => 'required|integer|min:1',
 

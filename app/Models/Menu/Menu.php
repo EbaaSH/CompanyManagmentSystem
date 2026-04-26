@@ -9,13 +9,35 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Menu extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = ['branch_id', 'name', 'description', 'is_active', 'start_time', 'end_time'];
 
+    protected static function booted()
+    {
+        // 🔻 DELETE CASCADE
+        static::deleting(function ($menu) {
+
+            if ($menu->isForceDeleting()) {
+                $menu->categories()->withTrashed()->forceDelete();
+            } else {
+                $menu->categories()->each(function ($category) {
+                    $category->delete();
+                });
+            }
+        });
+
+        // 🔄 RESTORE CASCADE
+        static::restoring(function ($menu) {
+            $menu->categories()->withTrashed()->each(function ($category) {
+                $category->restore();
+            });
+        });
+    }
     // ─── Relationships ────────────────────────────────────────────────
 
     public function branch(): BelongsTo
@@ -89,7 +111,8 @@ class Menu extends Model
             $user->can('menus.scope.active_now') => $query
                 ->where('is_active', 1)
                 ->whereTime('start_time', '<=', now())
-                ->whereTime('end_time', '>=', now()),
+                ->whereTime('end_time', '>=', now())
+                ->where('deleted_at', null),
 
             default => $query->whereRaw('0 = 1'),
         };
