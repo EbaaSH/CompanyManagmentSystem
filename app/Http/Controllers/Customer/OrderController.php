@@ -27,13 +27,15 @@ class OrderController extends Controller
      */
     public function store(CreateOrderRequest $request)
     {
-        $this->authorize('create', Order::class);
-        DB::beginTransaction();
         try {
+            $this->authorize('create', Order::class);
+            DB::beginTransaction();
             $data = $this->orderService->placeOrder($request);
-
+            if ($data['code'] !== 201) {
+                DB::rollBack();
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
             DB::commit();
-
             return Response::Success($data['data'], $data['message'], $data['code']);
         } catch (Throwable $th) {
             DB::rollBack();
@@ -48,13 +50,13 @@ class OrderController extends Controller
      */
     public function update(UpdateOrderRequest $request, $id)
     {
-        $order = Order::find($id);
-        if (! $order) {
-            return Response::Error([], 'Order not found', 404);
-        }
-        $this->authorize('update', $order);
-        DB::beginTransaction();
         try {
+            $order = Order::find($id);
+            if (!$order) {
+                return Response::Error([], 'Order not found', 404);
+            }
+            $this->authorize('update', $order);
+            DB::beginTransaction();
             $data = $this->orderService->updateOrder($request, $id);
 
             DB::commit();
@@ -82,7 +84,7 @@ class OrderController extends Controller
             $order = Order::findOrFail($id);
             $this->authorize('delete', $order);
 
-            if (! in_array($order->status, ['pending', 'confirmed', 'preparing', 'ready_for_pickup'])) {
+            if (!in_array($order->status, ['pending', 'confirmed', 'preparing', 'ready_for_pickup'])) {
                 return Response::Error([], "Cannot cancel order in {$order->status} status");
             }
 
@@ -193,7 +195,7 @@ class OrderController extends Controller
             $order = Order::with('delivery.driver.user')->findOrFail($id);
             $this->authorize('view', $order);
 
-            if (! $order->delivery) {
+            if (!$order->delivery) {
                 return Response::Error([], 'Delivery not found');
             }
 

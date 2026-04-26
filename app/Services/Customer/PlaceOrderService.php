@@ -3,6 +3,9 @@
 namespace App\Services\Customer;
 
 use App\Action\ConfirmOrder;
+use App\Events\OrderPlaced;
+use App\Helpers\PricingHelper;
+use App\Models\Customer\CustomerAddress;
 use App\Models\Menu\ItemOption;
 use App\Models\Menu\MenuItem;
 use App\Models\Order\Order;
@@ -27,7 +30,9 @@ class PlaceOrderService
      */
     private $confirmAction;
 
-    public function __construct(ConfirmOrder $confirmAction) {}
+    public function __construct(ConfirmOrder $confirmAction)
+    {
+    }
 
     public function confirmActionFun($order)
     {
@@ -48,54 +53,64 @@ class PlaceOrderService
             'notes' => $request->notes ?? '',
         ]);
 
-        try {
-            // Process items and calculate totals
-            $subtotal = 0;
-            foreach ($request->items as $itemData) {
-                $subtotal += $this->createOrderItem($order, $itemData);
-            }
 
-            // Create invoice
-            $invoice = $this->createInvoice($order, $subtotal, $request);
-
-            // Create payment record
-            $this->createPaymentRecord($order, $invoice->total, $request->payment_method);
-
-            // Record initial status
-            OrderStatusHistory::create([
-                'order_id' => $order->id,
-                'old_status' => 'none',
-                'new_status' => 'pending',
-                'changed_by_user_id' => auth()->id(),
-                'reason' => 'Order created by customer',
-            ]);
-
-            // Create order status
-            OrderStatus::create([
-                'order_id' => $order->id,
-                'placed_at' => now(),
-            ]);
-
-            // VALIDATE ORDER
-            $this->validateOrder($order);
-
-            // AUTO-CONFIRM if validation passes
-            $this->confirmAction = $this->confirmActionFun($order);
-
-            $this->confirmAction->autoConfirm();
-
-            // Return response with estimated time
-            return [
-                'data' => $this->formatOrderResponse($order),
-                'message' => 'Order placed and confirmed successfully',
-                'code' => 201,
-            ];
-
-        } catch (\Exception $e) {
-            // Clean up on failure
-            $order->delete();
-            throw $e;
+        // Process items and calculate totals
+        $subtotal = 0;
+        foreach ($request->items as $itemData) {
+            $subtotal += $this->createOrderItem($order, $itemData);
         }
+
+        // Create invoice
+        $customer = auth()->user()->customerProfile;
+        $address = $customer->addresses()->find($request->delivery_address_id);
+
+        $invoiceanddistance = $this->createInvoice($order, $subtotal, $address->latitude, $address->longitude);
+        $invoice = $invoiceanddistance['invoice'];
+        $distance_km = $invoiceanddistance['distance_km'];
+
+        if ($distance_km > 150) {
+            throw ValidationException::withMessages([
+                'delivery' => 'Delivery not available for this distance',
+            ]);
+        }
+
+        // Create payment record
+        $this->createPaymentRecord($order, $invoice->total, $request->payment_method);
+
+        // Record initial status
+        OrderStatusHistory::create([
+            'order_id' => $order->id,
+            'old_status' => 'none',
+            'new_status' => 'pending',
+            'changed_by_user_id' => auth()->id(),
+            'reason' => 'Order created by customer',
+        ]);
+
+        // Create order status
+        OrderStatus::create([
+            'order_id' => $order->id,
+            'placed_at' => now(),
+        ]);
+
+        // VALIDATE ORDER
+        $this->validateOrder($order);
+
+        // AUTO-CONFIRM if validation passes
+        $this->confirmAction = $this->confirmActionFun($order);
+
+        $this->confirmAction->autoConfirm();
+
+        if ($order->status != 'confirmed') {
+            event(new OrderPlaced($order));
+        }
+        // Return response with estimated time
+        return [
+            'data' => $this->formatOrderResponse($order, $distance_km),
+            'message' => 'Order placed and confirmed successfully',
+            'code' => 201,
+        ];
+
+
     }
 
     /**
@@ -105,7 +120,7 @@ class PlaceOrderService
     {
         $menuItem = MenuItem::findOrFail($itemData['menu_item_id']);
 
-        if (! $menuItem->is_available) {
+        if (!$menuItem->is_available) {
             throw ValidationException::withMessages([
                 'items' => "Item '{$menuItem->name}' is no longer available",
             ]);
@@ -124,9 +139,16 @@ class PlaceOrderService
         ]);
 
         // Process options
-        if (! empty($itemData['options'])) {
+        if (!empty($itemData['options'])) {
             foreach ($itemData['options'] as $optionId) {
-                $option = ItemOption::findOrFail($optionId);
+                $option = ItemOption::with('optionGroup')->where('is_available', true)
+                    ->find($optionId['option_id']);
+                // dd($option);
+                if (!$option) {
+                    throw ValidationException::withMessages([
+                        'options' => 'Invalid option selected',
+                    ]);
+                }
 
                 OrderItemOption::create([
                     'order_item_id' => $orderItem->id,
@@ -145,27 +167,32 @@ class PlaceOrderService
     /**
      * CREATE ORDER INVOICE
      */
-    private function createInvoice(Order $order, float $subtotal, $request): OrderInvoice
+    private function createInvoice(Order $order, float $subtotal, $customerLat, $customerLng)
     {
         $branch = $order->branch;
 
-        // Calculate delivery free (could be dynamic based on distance)
-        $deliveryFree = $branch->default_delivery_free ?? 5.00;
+        $result = PricingHelper::calculate(
+            $subtotal,
+            $branch,
+            $customerLat,
+            $customerLng
+        );
 
-        // Calculate tax (could be configurable)
-        $taxRate = $branch->tax_rate ?? 0.10;
-        $tax = round($subtotal * $taxRate, 2);
+        $total = $result['total'];
 
-        $total = $subtotal + $deliveryFree + $tax;
-
-        return OrderInvoice::create([
+        $invoice = OrderInvoice::create([
             'order_id' => $order->id,
             'subtotal' => $subtotal,
-            'delivery_free' => $deliveryFree ?? 5.00,
-            'tax' => $tax,
+            'delivery_free' => $result['delivery_fee'] ?? 5.00,
+            'tax' => $result['tax'],
             'discount' => 0,
             'total' => $total,
         ]);
+
+        return [
+            'invoice' => $invoice,
+            'distance_km' => $result['distance_km']
+        ];
     }
 
     /**
@@ -178,7 +205,7 @@ class PlaceOrderService
             'payment_method' => $paymentMethod,
             'payment_status' => 'pending',
             'amount' => $amount,
-            'transaction_reference' => 'TXN-'.uniqid(),
+            'transaction_reference' => 'TXN-' . uniqid(),
         ]);
     }
 
@@ -195,7 +222,7 @@ class PlaceOrderService
         $branch = $order->branch;
 
         // Check branch is open
-        if (! $this->isBranchOpen($branch)) {
+        if (!$this->isBranchOpen($branch)) {
             throw ValidationException::withMessages([
                 'branch' => 'Branch is currently closed. Please try again later.',
             ]);
@@ -203,7 +230,7 @@ class PlaceOrderService
 
         // Check payment method
         $validMethods = ['cash', 'card', 'wallet'];
-        if (! in_array($order->payment->payment_method, $validMethods)) {
+        if (!in_array($order->payment->payment_method, $validMethods)) {
             throw ValidationException::withMessages([
                 'payment_method' => 'Invalid payment method',
             ]);
@@ -238,7 +265,7 @@ class PlaceOrderService
                 })
                 ->first();
 
-            if (! $hours) {
+            if (!$hours) {
                 return false;
             }
 
@@ -255,14 +282,14 @@ class PlaceOrderService
      */
     private function generateOrderNumber(): string
     {
-        return 'ORD-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -6));
+        return 'ORD-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
     }
 
     /**
      * FORMAT ORDER RESPONSE
      * Uses already-loaded relationships to avoid extra queries
      */
-    private function formatOrderResponse(Order $order): array
+    private function formatOrderResponse(Order $order, $distance_km): array
     {
         // Calculate estimated preparation time from order items
         $estimatedPrepTime = 0;
@@ -272,8 +299,8 @@ class PlaceOrderService
                 ->filter()
                 ->max() ?? 0;
         }
-
-        $estimatedDeliveryTime = ($estimatedPrepTime ?? 0) + 30;
+        // estimated time + 2 minute for every KM
+        $estimatedDeliveryTime = ($estimatedPrepTime ?? 0) + $distance_km * 2;
 
         // Format items
         $items = [];
@@ -327,12 +354,15 @@ class PlaceOrderService
      */
     public function updateOrder($request, $id)
     {
-        $order = Order::findOrFail($id);
+        $user = auth()->user();
+        $order = Order::query()
+            ->forUserViaPermission($user)
+            ->find($id);
 
-        if ($order->status !== 'pending') {
+        if ($order->status !== 'pending' || $order->status !== 'confirmed') {
             return [
                 'data' => null,
-                'message' => 'Orders can only be updated in pending status',
+                'message' => 'Orders can only be updated brafore preparing status',
                 'code' => 400,
             ];
         }
@@ -354,9 +384,17 @@ class PlaceOrderService
             }
 
             // Update invoice
+            $customer = auth()->user()->customerProfile;
+            $address = $customer->addresses()->find($request->delivery_address_id);
+            $result = PricingHelper::calculate(
+                $subtotal,
+                $order->branch,
+                $address->latitude,
+                $address->longitude
+            );
             $order->orderInvoice()->update([
                 'subtotal' => $subtotal,
-                'total' => $subtotal + $order->orderInvoice->delivery_free + $order->orderInvoice->tax,
+                'total' => $subtotal + $result['delivery_fee'] + $result['tax'],
             ]);
 
             // Update payment amount
@@ -374,7 +412,7 @@ class PlaceOrderService
             ]);
 
             return [
-                'data' => $this->formatOrderResponse($order),
+                'data' => $this->formatOrderResponse($order, $result['distance_km']),
                 'message' => 'Order updated successfully',
                 'code' => 200,
             ];
@@ -382,7 +420,7 @@ class PlaceOrderService
         } catch (\Exception $e) {
             return [
                 'data' => null,
-                'message' => 'Failed to update order: '.$e->getMessage(),
+                'message' => 'Failed to update order: ' . $e->getMessage(),
                 'code' => 400,
             ];
         }
