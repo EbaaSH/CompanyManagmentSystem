@@ -123,8 +123,8 @@ class OrderController extends Controller
             }
             $this->authorize('reject', $order);
 
-            if ($order->status !== 'pending') {
-                return Response::Error([], 'Can only reject pending orders');
+            if ($order->status != 'pending' || $order->status != 'confirmed') {
+                return Response::Error([], 'Can only reject pending or cofirmed orders');
             }
 
             DB::beginTransaction();

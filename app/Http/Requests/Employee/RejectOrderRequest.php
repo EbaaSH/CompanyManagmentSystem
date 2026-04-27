@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests\Employee;
 
+use App\Http\Responses\Response;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\ValidationException;
 
 class RejectOrderRequest extends FormRequest
 {
@@ -22,5 +25,10 @@ class RejectOrderRequest extends FormRequest
         return [
             'reason' => 'required|string|max:500',
         ];
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new ValidationException($validator, Response::Validation([], $validator->errors()));
     }
 }

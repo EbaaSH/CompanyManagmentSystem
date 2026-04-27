@@ -37,7 +37,7 @@ class RejectOrder
 
     public function reject($userId, $reason = null)
     {
-        if ($this->order->status !== 'pending' || $this->order->status !== 'confirmed') {
+        if ($this->order->status != 'pending' || $this->order->status != 'confirmed') {
             throw new \Exception('Can only reject pending or confirmed orders');
         }
 
