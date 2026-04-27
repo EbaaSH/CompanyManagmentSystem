@@ -48,10 +48,15 @@ class MarkReadyOrder
             $this->order->delivery()->create([
                 'delivery_status' => 'unassigned',
             ]);
+            $this->order->refresh();
         }
 
         $this->order->update(['status' => 'ready_for_pickup']);
         $this->recordStatusHistory('preparing', 'ready_for_pickup', $userId);
+
+        $this->order->orderStatus->update([
+            'ready_at' => now(),
+        ]);
 
         // FIRE EVENT: This triggers auto-driver assignment
         event(new OrderReady($this->order));

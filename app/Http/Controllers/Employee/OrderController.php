@@ -6,7 +6,6 @@ use App\Action\Orders\MarkPreparingOrder;
 use App\Action\Orders\MarkReadyOrder;
 use App\Action\Orders\RejectOrder;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Employee\MarkOrderReadyRequest;
 use App\Http\Requests\Employee\RejectOrderRequest;
 use App\Http\Responses\Response;
 use App\Models\Order\Order;
@@ -25,10 +24,8 @@ class OrderController extends Controller
 
     private $rejectOrder;
 
-    public function __construct(MarkPreparingOrder $markPreparingOrder, MarkReadyOrder $markreadyOrder, RejectOrder $rejectOrder)
+    public function __construct(RejectOrder $rejectOrder)
     {
-        $this->markPreparing = $markPreparingOrder;
-        $this->markReady = $markreadyOrder;
         $this->rejectOrder = $rejectOrder;
     }
 
@@ -50,7 +47,8 @@ class OrderController extends Controller
 
             DB::beginTransaction();
 
-            $this->markPreparing->markPreparing($user->id());
+            $this->markPreparing = new MarkPreparingOrder($order);
+            $this->markPreparing->markPreparing($user->id);
 
             DB::commit();
 
@@ -74,7 +72,7 @@ class OrderController extends Controller
      * 2. Async driver assignment job
      * 3. Customer notification
      */
-    public function markReady(MarkOrderReadyRequest $request, $orderId)
+    public function markReady($orderId)
     {
         try {
             $user = auth()->user();
@@ -91,8 +89,8 @@ class OrderController extends Controller
             }
 
             DB::beginTransaction();
-
-            $this->markReady->markReady($user->id());
+            $this->markReady = new MarkReadyOrder($order);
+            $this->markReady->markReady($user->id);
 
             DB::commit();
 
@@ -123,7 +121,7 @@ class OrderController extends Controller
             if (! $order) {
                 return Response::Error(null, 'order not found', 404);
             }
-            $this->authorize('update', $order);
+            $this->authorize('reject', $order);
 
             if ($order->status !== 'pending') {
                 return Response::Error([], 'Can only reject pending orders');
@@ -131,7 +129,8 @@ class OrderController extends Controller
 
             DB::beginTransaction();
 
-            $this->rejectOrder->reject($user->id(), $request->reason);
+            $this->rejectOrder = new RejectOrder($order);
+            $this->rejectOrder->reject($user->id, $request->reason);
 
             DB::commit();
 

@@ -117,10 +117,10 @@ class AssignDriverJob implements ShouldQueue
             event(new DriverAssigned($this->order->delivery));
 
             // Notify driver
-            $this->notifyDriver($driver);
+            // $this->notifyDriver($driver);
 
             // Notify customer
-            $this->notifyCustomer();
+            // $this->notifyCustomer();
 
             \Log::info('Driver assigned', [
                 'order_id' => $this->order->id,
@@ -140,38 +140,38 @@ class AssignDriverJob implements ShouldQueue
     /**
      * Notify driver of assignment
      */
-    private function notifyDriver(DriverProfile $driver)
-    {
-        Notification::create([
-            'user_id' => $driver->user_id,
-            'type' => 'delivery.assigned',
-            'title' => 'New Delivery: '.$this->order->order_number,
-            'message' => "Pick up {$this->order->items->count()} items from {$this->order->branch->name}",
-        ]);
+    // private function notifyDriver(DriverProfile $driver)
+    // {
+    //     Notification::create([
+    //         'user_id' => $driver->user_id,
+    //         'type' => 'delivery.assigned',
+    //         'title' => 'New Delivery: '.$this->order->order_number,
+    //         'message' => "Pick up your items from {$this->order->branch->name}",
+    //     ]);
 
-        // Send push notification with delivery details
-        // $driver->user->notifyNewDelivery($this->order);
-    }
+    //     // Send push notification with delivery details
+    //     // $driver->user->notifyNewDelivery($this->order);
+    // }
 
     /**
      * Notify customer driver assigned
      */
-    private function notifyCustomer()
-    {
-        $driver = $this->order->delivery->driver;
-        $estimatedPickupTime = 15; // minutes
-        $estimatedDeliveryTime = 30; // minutes
+    // private function notifyCustomer()
+    // {
+    //     $driver = $this->order->delivery->driver;
+    //     $estimatedPickupTime = 15; // minutes
+    //     $estimatedDeliveryTime = 30; // minutes
 
-        Notification::create([
-            'user_id' => $this->order->customer->user_id,
-            'type' => 'delivery.assigned',
-            'title' => 'Driver assigned!',
-            'message' => "Driver {$driver->user->name} will deliver your order in ~{$estimatedDeliveryTime} minutes",
-        ]);
+    //     Notification::create([
+    //         'user_id' => $this->order->customer->user_id,
+    //         'type' => 'delivery.assigned',
+    //         'title' => 'Driver assigned!',
+    //         'message' => "Driver {$driver->user->name} will deliver your order in ~{$estimatedDeliveryTime} minutes",
+    //     ]);
 
-        // Send tracking link
-        // $this->order->customer->user->sendTrackingLink($this->order);
-    }
+    //     // Send tracking link
+    //     // $this->order->customer->user->sendTrackingLink($this->order);
+    // }
 
     /**
      * Notify admin when no driver available after timeout

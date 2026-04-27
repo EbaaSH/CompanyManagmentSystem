@@ -19,10 +19,9 @@ class OrderController extends Controller
 
     protected $cancelOrder;
 
-    public function __construct(PlaceOrderService $orderService, CancelOrder $cancelOrder)
+    public function __construct(PlaceOrderService $orderService)
     {
         $this->orderService = $orderService;
-        $this->cancelOrder = $cancelOrder;
     }
 
     /**
@@ -99,12 +98,21 @@ class OrderController extends Controller
                 return Response::Error([], 'Order not found', 404);
             }
             $this->authorize('cancel', $order);
+            $status = trim((string) $order->status);
 
-            if (! in_array($order->status, ['pending', 'confirmed', 'preparing', 'ready_for_pickup'])) {
-                return Response::Error([], "Cannot cancel order in {$order->status} status");
+            $cancelableStatuses = [
+                'pending',
+                'confirmed',
+                'preparing',
+                'ready_for_pickup',
+            ];
+
+            if (! in_array($status, $cancelableStatuses)) {
+                return Response::Error([], "Cannot cancel order in {$status} status");
             }
 
             DB::beginTransaction();
+            $this->cancelOrder = new CancelOrder($order);
             $this->cancelOrder->cancel($user->id, $request->reason ?? 'Customer cancelled');
 
             DB::commit();

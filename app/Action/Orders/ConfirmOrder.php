@@ -45,6 +45,9 @@ class ConfirmOrder
         }
 
         $this->order->update(['status' => 'confirmed']);
+        $this->order->orderStatus->update([
+            'confirmed_at' => now(),
+        ]);
         $this->recordStatusHistory('pending', 'confirmed', $userId, 'Auto-confirmed by system');
 
         // Fire event

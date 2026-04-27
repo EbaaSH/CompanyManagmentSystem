@@ -34,6 +34,7 @@ class HandleOrderReady
 
         // Queue driver assignment job (async)
         AssignDriverJob::dispatch($order)->delay(now()->addSeconds(5));
+        // dd($order);
 
         // Notify customer: "Your order is ready!"
         Notification::create([

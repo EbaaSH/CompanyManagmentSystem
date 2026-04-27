@@ -43,10 +43,10 @@ class CancelOrder
             throw new \Exception("Cannot cancel order in {$this->order->status} status");
         }
 
-        $this->order->update(['status' => 'cancelled']);
-
         $this->recordStatusHistory($this->order->status, 'cancelled', $userId, $reason);
-
+        $this->order->orderStatus->update([
+            'cancelled_at' => now(),
+        ]);
         event(new OrderCancelled($this->order, $reason));
 
         return $this->order;

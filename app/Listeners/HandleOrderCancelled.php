@@ -28,7 +28,7 @@ class HandleOrderCancelled
             'ready_for_pickup' => 50,
             default => 0,
         };
-
+        $order->update(['status' => 'cancelled']);
         // Process refund
         if ($refundPercentage > 0) {
             $refundAmount = ($order->orderInvoice->total * $refundPercentage) / 100;
@@ -46,10 +46,12 @@ class HandleOrderCancelled
 
     private function processRefund($order, $amount)
     {
-        $order->payment->update([
-            'payment_status' => 'refunded',
-        ]);
-
+        if ($order->payment) {
+            $order->payment->update([
+                'payment_status' => 'refunded',
+                'amount' => $amount,
+            ]);
+        }
         // Actual refund logic (call payment gateway)
         // PaymentService::refund($order->payment->transaction_reference, $amount);
     }

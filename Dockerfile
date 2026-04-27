@@ -33,6 +33,9 @@ RUN echo "memory_limit = 512M" > /usr/local/etc/php/conf.d/app.ini && \
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+# update for certificated
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+
 # Enable Apache modules
 RUN a2enmod rewrite headers
 
