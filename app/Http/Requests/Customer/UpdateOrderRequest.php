@@ -4,6 +4,7 @@ namespace App\Http\Requests\Customer;
 
 use App\Http\Responses\Response;
 use App\Models\Menu\MenuItem;
+use App\Models\Order\Order;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
@@ -41,10 +42,18 @@ class UpdateOrderRequest extends FormRequest
     {
         $validator->after(function ($validator) {
 
+            // ✅ Get order from route
+            $orderId = $this->route('id'); // make sure your route param is {id}
+            $order = Order::find($orderId);
+
+            if (!$order) {
+                return;
+            }
+
             foreach ($this->items as $itemIndex => $item) {
 
                 // =========================
-                // 1. LOAD MENU ITEM WITH RELATIONS
+                // 1. LOAD MENU ITEM
                 // =========================
                 $menuItem = MenuItem::with('category.menu', 'itemOptionGroups.itemOptions')
                     ->find($item['menu_item_id']);
@@ -54,12 +63,12 @@ class UpdateOrderRequest extends FormRequest
                 }
 
                 // =========================
-                // 2. CHECK ITEM BELONGS TO BRANCH
+                // 2. CHECK ITEM BELONGS TO ORDER BRANCH ✅ FIXED
                 // =========================
-                if ($menuItem->category->menu->branch_id != $this->branch_id) {
+                if ($menuItem->category->menu->branch_id != $order->branch_id) {
                     $validator->errors()->add(
                         "items.$itemIndex.menu_item_id",
-                        "Item does not belong to selected branch"
+                        "Item does not belong to this order's branch"
                     );
                 }
 

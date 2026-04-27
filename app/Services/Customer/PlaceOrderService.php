@@ -359,7 +359,15 @@ class PlaceOrderService
             ->forUserViaPermission($user)
             ->find($id);
 
-        if ($order->status !== 'pending' || $order->status !== 'confirmed') {
+        if (!$order) {
+            return [
+                'data' => null,
+                'message' => 'order not found',
+                'code' => 404,
+            ];
+        }
+
+        if (!in_array($order->status, ['pending', 'confirmed'])) {
             return [
                 'data' => null,
                 'message' => 'Orders can only be updated brafore preparing status',
@@ -367,62 +375,56 @@ class PlaceOrderService
             ];
         }
 
-        try {
-            // Update order fields
-            $order->update([
-                'delivery_address_id' => $request->delivery_address_id,
-                'notes' => $request->notes ?? '',
-            ]);
 
-            // Delete old order items
-            $order->orderItems()->delete();
+        // Update order fields
+        $order->update([
+            'delivery_address_id' => $request->delivery_address_id,
+            'notes' => $request->notes ?? '',
+        ]);
 
-            // Add new order items
-            $subtotal = 0;
-            foreach ($request->items as $itemData) {
-                $subtotal += $this->createOrderItem($order, $itemData);
-            }
+        // Delete old order items
+        $order->orderItems()->delete();
 
-            // Update invoice
-            $customer = auth()->user()->customerProfile;
-            $address = $customer->addresses()->find($request->delivery_address_id);
-            $result = PricingHelper::calculate(
-                $subtotal,
-                $order->branch,
-                $address->latitude,
-                $address->longitude
-            );
-            $order->orderInvoice()->update([
-                'subtotal' => $subtotal,
-                'total' => $subtotal + $result['delivery_fee'] + $result['tax'],
-            ]);
-
-            // Update payment amount
-            $order->payment()->update([
-                'amount' => $order->orderInvoice->total,
-            ]);
-
-            // Record history
-            OrderStatusHistory::create([
-                'order_id' => $order->id,
-                'old_status' => $order->status,
-                'new_status' => $order->status,
-                'changed_by_user_id' => auth()->id(),
-                'reason' => 'Order updated by customer',
-            ]);
-
-            return [
-                'data' => $this->formatOrderResponse($order, $result['distance_km']),
-                'message' => 'Order updated successfully',
-                'code' => 200,
-            ];
-
-        } catch (\Exception $e) {
-            return [
-                'data' => null,
-                'message' => 'Failed to update order: ' . $e->getMessage(),
-                'code' => 400,
-            ];
+        // Add new order items
+        $subtotal = 0;
+        foreach ($request->items as $itemData) {
+            $subtotal += $this->createOrderItem($order, $itemData);
         }
+
+        // Update invoice
+        $customer = auth()->user()->customerProfile;
+        $address = $customer->addresses()->find($request->delivery_address_id);
+        $result = PricingHelper::calculate(
+            $subtotal,
+            $order->branch,
+            $address->latitude,
+            $address->longitude
+        );
+        $order->orderInvoice()->update([
+            'subtotal' => $subtotal,
+            'total' => $subtotal + $result['delivery_fee'] + $result['tax'],
+        ]);
+
+        // Update payment amount
+        $order->payment()->update([
+            'amount' => $order->orderInvoice->total,
+        ]);
+
+        // Record history
+        OrderStatusHistory::create([
+            'order_id' => $order->id,
+            'old_status' => $order->status,
+            'new_status' => $order->status,
+            'changed_by_user_id' => auth()->id(),
+            'reason' => 'Order updated by customer',
+        ]);
+
+        return [
+            'data' => $this->formatOrderResponse($order, $result['distance_km']),
+            'message' => 'Order updated successfully',
+            'code' => 200,
+        ];
+
+
     }
 }

@@ -58,7 +58,10 @@ class OrderController extends Controller
             $this->authorize('update', $order);
             DB::beginTransaction();
             $data = $this->orderService->updateOrder($request, $id);
-
+            if ($data['code'] !== 200) {
+                DB::rollBack();
+                return Response::Error($data['data'], $data['message'], $data['code']);
+            }
             DB::commit();
 
             return Response::Success($data['data'], $data['message'], $data['code']);
@@ -81,7 +84,13 @@ class OrderController extends Controller
     public function cancel(CancelOrderRequest $request, $id)
     {
         try {
-            $order = Order::findOrFail($id);
+            $user = auth()->user();
+            $order = Order::query()
+                ->forUserViaPermission($user)
+                ->find($id);
+            if(!$order) {
+                return Response::Error([], 'Order not found', 404);
+            }
             $this->authorize('delete', $order);
 
             if (!in_array($order->status, ['pending', 'confirmed', 'preparing', 'ready_for_pickup'])) {
@@ -89,7 +98,6 @@ class OrderController extends Controller
             }
 
             DB::beginTransaction();
-            $user = auth()->user();
             $order->cancel($user->id, $request->reason ?? 'Customer cancelled');
 
             DB::commit();

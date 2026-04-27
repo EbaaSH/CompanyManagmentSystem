@@ -50,10 +50,10 @@ Route::middleware(['auth:api'])
 
             Route::put('/update', [ProfileController::class, 'updateProfile']);
             Route::put('/update-password', [ProfileController::class, 'updatePassword']);
-            
+
         });
     });
-    
+
 Route::middleware(['auth:api'])
     ->group(function () {
 
