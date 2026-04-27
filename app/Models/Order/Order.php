@@ -162,23 +162,23 @@ class Order extends Model
      * Called automatically after validation
      * Skips manual confirmation step for faster processing
      */
-    public function autoConfirm()
-    {
-        $userId = auth()->user()->id;
-        $stateMachine = $this->stateMachine();
+    // public function autoConfirm()
+    // {
+    //     $userId = auth()->user()->id;
+    //     $stateMachine = $this->stateMachine();
 
-        if (! $stateMachine->canTransition('confirmed', 'system')) {
-            throw new \Exception('Order cannot be auto-confirmed');
-        }
+    //     if (! $stateMachine->canTransition('confirmed', 'system')) {
+    //         throw new \Exception('Order cannot be auto-confirmed');
+    //     }
 
-        $this->update(['status' => 'confirmed']);
-        $this->recordStatusHistory('pending', 'confirmed', $userId, 'Auto-confirmed by system');
+    //     $this->update(['status' => 'confirmed']);
+    //     $this->recordStatusHistory('pending', 'confirmed', $userId, 'Auto-confirmed by system');
 
-        // Fire event
-        event(new OrderConfirmed($this));
+    //     // Fire event
+    //     event(new OrderConfirmed($this));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * EMPLOYEE CONFIRMS ORDER (Manual)
@@ -204,21 +204,21 @@ class Order extends Model
      * EMPLOYEE MARKS PREPARING
      * Employee starts preparing order in kitchen
      */
-    public function markPreparing($userId)
-    {
-        $stateMachine = $this->stateMachine();
+    // public function markPreparing($userId)
+    // {
+    //     $stateMachine = $this->stateMachine();
 
-        if (! $stateMachine->canTransition('preparing', 'employee')) {
-            throw new \Exception('Order cannot be marked as preparing');
-        }
+    //     if (! $stateMachine->canTransition('preparing', 'employee')) {
+    //         throw new \Exception('Order cannot be marked as preparing');
+    //     }
 
-        $this->update(['status' => 'preparing']);
-        $this->recordStatusHistory('confirmed', 'preparing', $userId);
+    //     $this->update(['status' => 'preparing']);
+    //     $this->recordStatusHistory('confirmed', 'preparing', $userId);
 
-        event(new OrderPreparing($this));
+    //     event(new OrderPreparing($this));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * EMPLOYEE MARKS READY FOR PICKUP
@@ -228,29 +228,29 @@ class Order extends Model
      * 2. Async driver assignment job (queued)
      * 3. Customer notification
      */
-    public function markReady($userId)
-    {
-        $stateMachine = $this->stateMachine();
+    // public function markReady($userId)
+    // {
+    //     $stateMachine = $this->stateMachine();
 
-        if (! $stateMachine->canTransition('ready_for_pickup', 'employee')) {
-            throw new \Exception('Order cannot be marked as ready');
-        }
+    //     if (! $stateMachine->canTransition('ready_for_pickup', 'employee')) {
+    //         throw new \Exception('Order cannot be marked as ready');
+    //     }
 
-        // Create delivery if doesn't exist
-        if (! $this->delivery) {
-            $this->delivery()->create([
-                'delivery_status' => 'unassigned',
-            ]);
-        }
+    //     // Create delivery if doesn't exist
+    //     if (! $this->delivery) {
+    //         $this->delivery()->create([
+    //             'delivery_status' => 'unassigned',
+    //         ]);
+    //     }
 
-        $this->update(['status' => 'ready_for_pickup']);
-        $this->recordStatusHistory('preparing', 'ready_for_pickup', $userId);
+    //     $this->update(['status' => 'ready_for_pickup']);
+    //     $this->recordStatusHistory('preparing', 'ready_for_pickup', $userId);
 
-        // FIRE EVENT: This triggers auto-driver assignment
-        event(new OrderReady($this));
+    //     // FIRE EVENT: This triggers auto-driver assignment
+    //     event(new OrderReady($this));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * DRIVER PICKS UP ORDER
@@ -324,40 +324,40 @@ class Order extends Model
      * CANCEL ORDER
      * Customer or system can cancel based on order stage
      */
-    public function cancel($userId, $reason = null)
-    {
-        $stateMachine = $this->stateMachine();
+    // public function cancel($userId, $reason = null)
+    // {
+    //     $stateMachine = $this->stateMachine();
 
-        if (! $stateMachine->canTransition('cancelled', auth()->user()?->getRoleNames()->first() ?? 'system')) {
-            throw new \Exception("Cannot cancel order in {$this->status} status");
-        }
+    //     if (! $stateMachine->canTransition('cancelled', auth()->user()?->getRoleNames()->first() ?? 'system')) {
+    //         throw new \Exception("Cannot cancel order in {$this->status} status");
+    //     }
 
-        $this->update(['status' => 'cancelled']);
+    //     $this->update(['status' => 'cancelled']);
 
-        $this->recordStatusHistory($this->status, 'cancelled', $userId, $reason);
+    //     $this->recordStatusHistory($this->status, 'cancelled', $userId, $reason);
 
-        event(new OrderCancelled($this, $reason));
+    //     event(new OrderCancelled($this, $reason));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * REJECT ORDER
      * Employee/Admin rejects order before confirming
      */
-    public function reject($userId, $reason = null)
-    {
-        if ($this->status !== 'pending') {
-            throw new \Exception('Can only reject pending orders');
-        }
+    // public function reject($userId, $reason = null)
+    // {
+    //     if ($this->status !== 'pending') {
+    //         throw new \Exception('Can only reject pending orders');
+    //     }
 
-        $this->update(['status' => 'rejected']);
-        $this->recordStatusHistory('pending', 'rejected', $userId, $reason);
+    //     $this->update(['status' => 'rejected']);
+    //     $this->recordStatusHistory('pending', 'rejected', $userId, $reason);
 
-        event(new OrderRejected($this, $reason));
+    //     event(new OrderRejected($this, $reason));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     // ===== HELPER METHODS =====
 

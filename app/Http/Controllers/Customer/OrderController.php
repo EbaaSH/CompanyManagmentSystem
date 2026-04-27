@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Action\Orders\CancelOrder;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\CancelOrderRequest;
 use App\Http\Requests\Customer\CreateOrderRequest;
@@ -16,9 +17,12 @@ class OrderController extends Controller
 {
     protected $orderService;
 
-    public function __construct(PlaceOrderService $orderService)
+    protected $cancelOrder;
+
+    public function __construct(PlaceOrderService $orderService, CancelOrder $cancelOrder)
     {
         $this->orderService = $orderService;
+        $this->cancelOrder = $cancelOrder;
     }
 
     /**
@@ -33,9 +37,11 @@ class OrderController extends Controller
             $data = $this->orderService->placeOrder($request);
             if ($data['code'] !== 201) {
                 DB::rollBack();
+
                 return Response::Error($data['data'], $data['message'], $data['code']);
             }
             DB::commit();
+
             return Response::Success($data['data'], $data['message'], $data['code']);
         } catch (Throwable $th) {
             DB::rollBack();
@@ -52,7 +58,7 @@ class OrderController extends Controller
     {
         try {
             $order = Order::find($id);
-            if (!$order) {
+            if (! $order) {
                 return Response::Error([], 'Order not found', 404);
             }
             $this->authorize('update', $order);
@@ -60,6 +66,7 @@ class OrderController extends Controller
             $data = $this->orderService->updateOrder($request, $id);
             if ($data['code'] !== 200) {
                 DB::rollBack();
+
                 return Response::Error($data['data'], $data['message'], $data['code']);
             }
             DB::commit();
@@ -88,17 +95,17 @@ class OrderController extends Controller
             $order = Order::query()
                 ->forUserViaPermission($user)
                 ->find($id);
-            if(!$order) {
+            if (! $order) {
                 return Response::Error([], 'Order not found', 404);
             }
-            $this->authorize('delete', $order);
+            $this->authorize('cancel', $order);
 
-            if (!in_array($order->status, ['pending', 'confirmed', 'preparing', 'ready_for_pickup'])) {
+            if (! in_array($order->status, ['pending', 'confirmed', 'preparing', 'ready_for_pickup'])) {
                 return Response::Error([], "Cannot cancel order in {$order->status} status");
             }
 
             DB::beginTransaction();
-            $order->cancel($user->id, $request->reason ?? 'Customer cancelled');
+            $this->cancelOrder->cancel($user->id, $request->reason ?? 'Customer cancelled');
 
             DB::commit();
 
@@ -118,113 +125,113 @@ class OrderController extends Controller
     /**
      * Get my orders (customer's orders)
      */
-    public function myOrders()
-    {
-        try {
-            $customerId = auth()->user()->customerProfile->id;
+    // public function myOrders()
+    // {
+    //     try {
+    //         $customerId = auth()->user()->customerProfile->id;
 
-            $orders = Order::where('customer_id', $customerId)
-                ->with([
-                    'orderItems.menuItem',
-                    'delivery.driver.user',
-                    'customer.user',
-                    'branch',
-                    'orderInvoice',
-                    'payment',
-                ])
-                ->latest()
-                ->paginate(15);
+    //         $orders = Order::where('customer_id', $customerId)
+    //             ->with([
+    //                 'orderItems.menuItem',
+    //                 'delivery.driver.user',
+    //                 'customer.user',
+    //                 'branch',
+    //                 'orderInvoice',
+    //                 'payment',
+    //             ])
+    //             ->latest()
+    //             ->paginate(15);
 
-            return Response::Success($orders, 'My orders retrieved', 200);
+    //         return Response::Success($orders, 'My orders retrieved', 200);
 
-        } catch (Throwable $th) {
-            return Response::Error([], $th->getMessage());
-        }
-    }
+    //     } catch (Throwable $th) {
+    //         return Response::Error([], $th->getMessage());
+    //     }
+    // }
 
-    /**
-     * Get order details with full information
-     */
-    public function show($id)
-    {
-        try {
-            $order = Order::with([
-                'orderItems.menuItem',
-                'orderItems.orderItemOptions',
-                'delivery.driver.user',
-                'delivery.statusHistories',
-                'customer.user',
-                'branch',
-                'orderInvoice',
-                'payment',
-                'statusHistories',
-            ])->findOrFail($id);
+    // /**
+    //  * Get order details with full information
+    //  */
+    // public function show($id)
+    // {
+    //     try {
+    //         $order = Order::with([
+    //             'orderItems.menuItem',
+    //             'orderItems.orderItemOptions',
+    //             'delivery.driver.user',
+    //             'delivery.statusHistories',
+    //             'customer.user',
+    //             'branch',
+    //             'orderInvoice',
+    //             'payment',
+    //             'statusHistories',
+    //         ])->findOrFail($id);
 
-            $this->authorize('view', $order);
+    //         $this->authorize('view', $order);
 
-            return Response::Success($order, 'Order details retrieved', 200);
+    //         return Response::Success($order, 'Order details retrieved', 200);
 
-        } catch (Throwable $th) {
-            return Response::Error([], $th->getMessage());
-        }
-    }
+    //     } catch (Throwable $th) {
+    //         return Response::Error([], $th->getMessage());
+    //     }
+    // }
 
-    /**
-     * Get active orders (in-progress deliveries)
-     */
-    public function activeOrders()
-    {
-        try {
-            $customerId = auth()->user()->customerProfile->id;
+    // /**
+    //  * Get active orders (in-progress deliveries)
+    //  */
+    // public function activeOrders()
+    // {
+    //     try {
+    //         $customerId = auth()->user()->customerProfile->id;
 
-            $orders = Order::where('customer_id', $customerId)
-                ->whereIn('status', ['confirmed', 'preparing', 'ready_for_pickup', 'picked_up'])
-                ->with([
-                    'orderItems.menuItem',
-                    'delivery.driver.user',
-                    'branch',
-                ])
-                ->latest()
-                ->get();
+    //         $orders = Order::where('customer_id', $customerId)
+    //             ->whereIn('status', ['confirmed', 'preparing', 'ready_for_pickup', 'picked_up'])
+    //             ->with([
+    //                 'orderItems.menuItem',
+    //                 'delivery.driver.user',
+    //                 'branch',
+    //             ])
+    //             ->latest()
+    //             ->get();
 
-            return Response::Success($orders, 'Active orders retrieved', 200);
+    //         return Response::Success($orders, 'Active orders retrieved', 200);
 
-        } catch (Throwable $th) {
-            return Response::Error([], $th->getMessage());
-        }
-    }
+    //     } catch (Throwable $th) {
+    //         return Response::Error([], $th->getMessage());
+    //     }
+    // }
 
-    /**
-     * Track delivery (live tracking endpoint)
-     */
-    public function trackDelivery($id)
-    {
-        try {
-            $order = Order::with('delivery.driver.user')->findOrFail($id);
-            $this->authorize('view', $order);
+    // /**
+    //  * Track delivery (live tracking endpoint)
+    //  */
+    // public function trackDelivery($id)
+    // {
+    //     try {
+    //         $order = Order::with('delivery.driver.user')->findOrFail($id);
+    //         $this->authorize('view', $order);
 
-            if (!$order->delivery) {
-                return Response::Error([], 'Delivery not found');
-            }
+    //         if (! $order->delivery) {
+    //             return Response::Error([], 'Delivery not found');
+    //         }
 
-            $trackingData = [
-                'order_number' => $order->order_number,
-                'status' => $order->status,
-                'delivery_status' => $order->delivery->delivery_status,
-                'driver' => $order->delivery->driver ? [
-                    'name' => $order->delivery->driver->user->name,
-                    'phone' => $order->delivery->driver->user->phone,
-                    'vehicle' => $order->delivery->driver->vehicle_info ?? 'N/A',
-                ] : null,
-                'estimated_arrival' => $order->delivery->delivery_status === 'picked_up'
-                    ? now()->addMinutes(20)->toIso8601String()
-                    : null,
-            ];
+    //         $trackingData = [
+    //             'order_number' => $order->order_number,
+    //             'status' => $order->status,
+    //             'delivery_status' => $order->delivery->delivery_status,
+    //             'driver' => $order->delivery->driver ? [
+    //                 'name' => $order->delivery->driver->user->name,
+    //                 'phone' => $order->delivery->driver->user->phone,
+    //                 'vehicle' => $order->delivery->driver->vehicle_info ?? 'N/A',
+    //             ] : null,
+    //             'estimated_arrival' => $order->delivery->delivery_status === 'picked_up'
+    //                 ? now()->addMinutes(20)->toIso8601String()
+    //                 : null,
+    //         ];
 
-            return Response::Success($trackingData, 'Delivery tracking retrieved', 200);
+    //         return Response::Success($trackingData, 'Delivery tracking retrieved', 200);
 
-        } catch (Throwable $th) {
-            return Response::Error([], $th->getMessage());
-        }
-    }
+    //     } catch (Throwable $th) {
+    //         return Response::Error([], $th->getMessage());
+    //     }
+    // }
 }

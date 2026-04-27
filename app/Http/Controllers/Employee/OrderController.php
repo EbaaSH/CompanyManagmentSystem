@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Employee;
 
+use App\Action\Orders\MarkPreparingOrder;
+use App\Action\Orders\MarkReadyOrder;
+use App\Action\Orders\RejectOrder;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Employee\MarkOrderPreparingRequest;
 use App\Http\Requests\Employee\MarkOrderReadyRequest;
 use App\Http\Requests\Employee\RejectOrderRequest;
 use App\Http\Responses\Response;
@@ -17,14 +19,30 @@ class OrderController extends Controller
      * Mark order as PREPARING
      * Employee starts preparing order in kitchen
      */
-    public function markPreparing(MarkOrderPreparingRequest $request, $orderId)
+    private $markPreparing;
+
+    private $markReady;
+
+    private $rejectOrder;
+
+    public function __construct(MarkPreparingOrder $markPreparingOrder, MarkReadyOrder $markreadyOrder, RejectOrder $rejectOrder)
+    {
+        $this->markPreparing = $markPreparingOrder;
+        $this->markReady = $markreadyOrder;
+        $this->rejectOrder = $rejectOrder;
+    }
+
+    public function markPreparing($orderId)
     {
         try {
-            $order = Order::find($orderId);
+            $user = auth()->user();
+            $order = Order::query()
+                ->forUserViaPermission($user)
+                ->find($orderId);
             if (! $order) {
                 return Response::Error(null, 'order not found', 404);
             }
-            $this->authorize('update', $order);
+            $this->authorize('markPreparing', $order);
 
             if ($order->status !== 'confirmed') {
                 return Response::Error([], 'Order must be in confirmed status');
@@ -32,7 +50,7 @@ class OrderController extends Controller
 
             DB::beginTransaction();
 
-            $order->markPreparing(auth()->id());
+            $this->markPreparing->markPreparing($user->id());
 
             DB::commit();
 
@@ -59,11 +77,14 @@ class OrderController extends Controller
     public function markReady(MarkOrderReadyRequest $request, $orderId)
     {
         try {
-            $order = Order::find($orderId);
+            $user = auth()->user();
+            $order = Order::query()
+                ->forUserViaPermission($user)
+                ->find($orderId);
             if (! $order) {
                 return Response::Error(null, 'order not found', 404);
             }
-            $this->authorize('update', $order);
+            $this->authorize('markReady', $order);
 
             if ($order->status !== 'preparing') {
                 return Response::Error([], 'Order must be in preparing status');
@@ -71,7 +92,7 @@ class OrderController extends Controller
 
             DB::beginTransaction();
 
-            $order->markReady(auth()->id());
+            $this->markReady->markReady($user->id());
 
             DB::commit();
 
@@ -95,8 +116,10 @@ class OrderController extends Controller
     public function reject(RejectOrderRequest $request, $orderId)
     {
         try {
-            $order = Order::find($orderId);
-
+            $user = auth()->user();
+            $order = Order::query()
+                ->forUserViaPermission($user)
+                ->find($orderId);
             if (! $order) {
                 return Response::Error(null, 'order not found', 404);
             }
@@ -108,7 +131,7 @@ class OrderController extends Controller
 
             DB::beginTransaction();
 
-            $order->reject(auth()->id(), $request->reason);
+            $this->rejectOrder->reject($user->id(), $request->reason);
 
             DB::commit();
 
@@ -128,54 +151,54 @@ class OrderController extends Controller
     /**
      * Get all orders for kitchen (by branch)
      */
-    public function getKitchenOrders()
-    {
-        try {
-            $this->authorize('viewAny', Order::class);
+    // public function getKitchenOrders()
+    // {
+    //     try {
+    //         $this->authorize('viewAny', Order::class);
 
-            $branchId = auth()->user()->employeeProfile->branch_id;
+    //         $branchId = auth()->user()->employeeProfile->branch_id;
 
-            $orders = Order::where('branch_id', $branchId)
-                ->whereIn('status', ['confirmed', 'preparing', 'ready_for_pickup'])
-                ->with(['orderItems', 'customer', 'delivery'])
-                ->latest()
-                ->paginate(15);
+    //         $orders = Order::where('branch_id', $branchId)
+    //             ->whereIn('status', ['confirmed', 'preparing', 'ready_for_pickup'])
+    //             ->with(['orderItems', 'customer', 'delivery'])
+    //             ->latest()
+    //             ->paginate(15);
 
-            return Response::Success($orders, 'Kitchen orders retrieved', 200);
+    //         return Response::Success($orders, 'Kitchen orders retrieved', 200);
 
-        } catch (Throwable $th) {
-            return Response::Error([], $th->getMessage());
-        }
-    }
+    //     } catch (Throwable $th) {
+    //         return Response::Error([], $th->getMessage());
+    //     }
+    // }
 
     /**
      * Get specific order details
      */
-    public function show($orderId)
-    {
-        try {
-            $order = Order::find($orderId);
-            if (! $order) {
-                return Response::Error(null, 'order not found', 404);
-            }
+    // public function show($orderId)
+    // {
+    //     try {
+    //         $order = Order::find($orderId);
+    //         if (! $order) {
+    //             return Response::Error(null, 'order not found', 404);
+    //         }
 
-            $this->authorize('view', $order);
+    //         $this->authorize('view', $order);
 
-            $order = Order::with([
-                'orderItems.menuItem',
-                'orderItems.orderItemOptions',
-                'customer.user',
-                'delivery.driver.user',
-                'delivery.statusHistories',
-                'statusHistories',
-                'orderInvoice',
-                'payment',
-            ])->findOrFail($orderId);
+    //         $order = Order::with([
+    //             'orderItems.menuItem',
+    //             'orderItems.orderItemOptions',
+    //             'customer.user',
+    //             'delivery.driver.user',
+    //             'delivery.statusHistories',
+    //             'statusHistories',
+    //             'orderInvoice',
+    //             'payment',
+    //         ])->findOrFail($orderId);
 
-            return Response::Success($order, 'Order details retrieved', 200);
+    //         return Response::Success($order, 'Order details retrieved', 200);
 
-        } catch (Throwable $th) {
-            return Response::Error([], $th->getMessage());
-        }
-    }
+    //     } catch (Throwable $th) {
+    //         return Response::Error([], $th->getMessage());
+    //     }
+    // }
 }

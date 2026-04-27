@@ -117,7 +117,7 @@ Route::middleware(['auth:api'])
         });
     });
 
-// Customer    
+// Customer
 Route::post('customers/register', [CustomerController::class, 'registerCustomer']);
 Route::middleware(['auth:api'])
     ->group(function () {
@@ -140,13 +140,13 @@ Route::middleware(['auth:api'])->group(function () {
         // Cancel order
         Route::delete('/{id}', [CustomerOrderController::class, 'cancel']);
         // Get my orders
-        Route::get('/', [CustomerOrderController::class, 'myOrders']);
-        // Get active orders (in-progress)
-        Route::get('/active/list', [CustomerOrderController::class, 'activeOrders']);
-        // Get order details
-        Route::get('/{id}', [CustomerOrderController::class, 'show']);
-        // Track delivery
-        Route::get('/{id}/track', [CustomerOrderController::class, 'trackDelivery']);
+        // Route::get('/', [CustomerOrderController::class, 'myOrders']);
+        // // Get active orders (in-progress)
+        // Route::get('/active/list', [CustomerOrderController::class, 'activeOrders']);
+        // // Get order details
+        // Route::get('/{id}', [CustomerOrderController::class, 'show']);
+        // // Track delivery
+        // Route::get('/{id}/track', [CustomerOrderController::class, 'trackDelivery']);
     });
 });
 
@@ -154,9 +154,9 @@ Route::middleware(['auth:api'])->group(function () {
 Route::middleware(['auth:api'])->group(function () {
     Route::prefix('employee/orders')->group(function () {
         // Get kitchen orders (in-progress)
-        Route::get('/', [EmployeeOrderController::class, 'getKitchenOrders']);
-        // Get order details
-        Route::get('/{id}', [EmployeeOrderController::class, 'show']);
+        // Route::get('/', [EmployeeOrderController::class, 'getKitchenOrders']);
+        // // Get order details
+        // Route::get('/{id}', [EmployeeOrderController::class, 'show']);
         // Mark as preparing
         Route::patch('/{id}/mark-preparing', [EmployeeOrderController::class, 'markPreparing']);
         // Mark as ready for pickup

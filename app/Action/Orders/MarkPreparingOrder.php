@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Action;
+namespace App\Action\Orders;
 
-use App\Events\OrderConfirmed;
+use App\Events\OrderPreparing;
 use App\Models\Order\Order;
 use App\Models\Order\OrderStatusHistory;
 use App\Services\Customer\OrderStateMachine;
 
-class ConfirmOrder
+class MarkPreparingOrder
 {
     private $order;
 
@@ -35,21 +35,19 @@ class ConfirmOrder
         ]);
     }
 
-    public function autoConfirm()
+    public function markPreparing($userId)
     {
-        $userId = auth()->user()->id;
         $stateMachine = $this->stateMachine();
 
-        if (! $stateMachine->canTransition('confirmed', 'system')) {
-            throw new \Exception('Order cannot be auto-confirmed');
+        if (! $stateMachine->canTransition('preparing', 'employee')) {
+            throw new \Exception('Order cannot be marked as preparing');
         }
 
-        $this->order->update(['status' => 'confirmed']);
-        $this->recordStatusHistory('pending', 'confirmed', $userId, 'Auto-confirmed by system');
+        $this->order->update(['status' => 'preparing']);
+        $this->recordStatusHistory('confirmed', 'preparing', $userId);
 
-        // Fire event
-        event(new OrderConfirmed($this->order));
+        event(new OrderPreparing($this->order));
 
-        return $this;
+        return $this->order;
     }
 }

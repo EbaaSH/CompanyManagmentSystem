@@ -48,6 +48,7 @@ class AssignDriverJob implements ShouldQueue
         $driver = $this->findBestDriver();
 
         if ($driver) {
+            $this->order->update(['driver_id' => $driver->id]);
             $this->assignDriver($driver);
         } else {
             // No driver available - will retry via Illuminate queue

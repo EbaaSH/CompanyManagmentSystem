@@ -35,7 +35,7 @@ class EventServiceProvider extends ServiceProvider
             Listeners\HandleOrderCancelled::class,
         ],
         Events\OrderRejected::class => [
-            // Handle order rejection
+            Listeners\HandleOrderRejected::class,
         ],
 
         // Delivery Events

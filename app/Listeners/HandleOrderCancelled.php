@@ -31,7 +31,7 @@ class HandleOrderCancelled
 
         // Process refund
         if ($refundPercentage > 0) {
-            $refundAmount = ($order->invoice->total * $refundPercentage) / 100;
+            $refundAmount = ($order->orderInvoice->total * $refundPercentage) / 100;
             $this->processRefund($order, $refundAmount);
         }
 

@@ -34,7 +34,7 @@ class OrderPolicy
     public function delete(User $user, Order $order): bool
     {
         return
-        // $user->can('orders.delete')&&
+        $user->can('orders.delete') &&
         Order::forUserViaPermission($user)->where('id', $order->id)->exists();
     }
 
@@ -62,6 +62,25 @@ class OrderPolicy
     {
         // must have write AND not be scoped to assigned-only (driver) or own (customer placing)
         return $user->can('orders.write');
+    }
 
+    public function cancel(User $user, Order $order)
+    {
+        return $user->can('orders.cancel');
+    }
+
+    public function markPreparing(User $user, Order $order)
+    {
+        return $user->can('orders.markPreparing');
+    }
+
+    public function markReady(User $user, Order $order)
+    {
+        return $user->can('orders.markReady');
+    }
+
+    public function reject(User $user, Order $order)
+    {
+        return $user->can('orders.reject');
     }
 }

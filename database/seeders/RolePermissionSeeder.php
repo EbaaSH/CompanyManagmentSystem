@@ -83,6 +83,10 @@ class RolePermissionSeeder extends Seeder
             'orders.scope.own',
             'orders.write',
             'orders.delete',
+            'orders.cancel',
+            'orders.markPreparing',
+            'orders.markReady',
+            'orders.reject',
 
             // Deliveries
             'deliveries.scope.all',
@@ -181,6 +185,9 @@ class RolePermissionSeeder extends Seeder
 
                 'orders.scope.branch',
                 'orders.write',
+                'orders.markPreparing',
+                'orders.markReady',
+                'orders.reject',
 
                 'deliveries.scope.branch',
                 'deliveries.write',
@@ -204,6 +211,9 @@ class RolePermissionSeeder extends Seeder
                 'customers.scope.branch',
                 'orders.scope.branch',
                 'orders.write',
+                'orders.markPreparing',
+                'orders.markReady',
+                'orders.reject',
                 'deliveries.scope.branch',
                 'menus.scope.branch',
                 'orders.delete',
@@ -235,6 +245,7 @@ class RolePermissionSeeder extends Seeder
                 'deliveries.scope.own',
                 'menus.scope.active_now',
                 'orders.delete',
+                'orders.cancel',
             ]);
     }
 }

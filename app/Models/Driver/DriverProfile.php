@@ -26,21 +26,30 @@ class DriverProfile extends Model
     {
         return $this->belongsTo(User::class);
     }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
+
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
     }
+
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class, 'driver_id');
     }
+
     public function deliveries(): HasMany
     {
         return $this->hasMany(Delivery::class, 'driver_id');
+    }
+
+    public function setAvailability($available)
+    {
+        $this->availability_status = $available;
     }
 
     // ─── Scope: Role-based ────────────────────────────────────────────

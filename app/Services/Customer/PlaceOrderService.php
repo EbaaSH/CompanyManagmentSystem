@@ -2,10 +2,9 @@
 
 namespace App\Services\Customer;
 
-use App\Action\ConfirmOrder;
+use App\Action\Orders\ConfirmOrder;
 use App\Events\OrderPlaced;
 use App\Helpers\PricingHelper;
-use App\Models\Customer\CustomerAddress;
 use App\Models\Menu\ItemOption;
 use App\Models\Menu\MenuItem;
 use App\Models\Order\Order;
@@ -30,9 +29,7 @@ class PlaceOrderService
      */
     private $confirmAction;
 
-    public function __construct(ConfirmOrder $confirmAction)
-    {
-    }
+    public function __construct(ConfirmOrder $confirmAction) {}
 
     public function confirmActionFun($order)
     {
@@ -52,7 +49,6 @@ class PlaceOrderService
             'status' => 'pending',
             'notes' => $request->notes ?? '',
         ]);
-
 
         // Process items and calculate totals
         $subtotal = 0;
@@ -103,13 +99,13 @@ class PlaceOrderService
         if ($order->status != 'confirmed') {
             event(new OrderPlaced($order));
         }
+
         // Return response with estimated time
         return [
             'data' => $this->formatOrderResponse($order, $distance_km),
             'message' => 'Order placed and confirmed successfully',
             'code' => 201,
         ];
-
 
     }
 
@@ -120,7 +116,7 @@ class PlaceOrderService
     {
         $menuItem = MenuItem::findOrFail($itemData['menu_item_id']);
 
-        if (!$menuItem->is_available) {
+        if (! $menuItem->is_available) {
             throw ValidationException::withMessages([
                 'items' => "Item '{$menuItem->name}' is no longer available",
             ]);
@@ -139,12 +135,12 @@ class PlaceOrderService
         ]);
 
         // Process options
-        if (!empty($itemData['options'])) {
+        if (! empty($itemData['options'])) {
             foreach ($itemData['options'] as $optionId) {
                 $option = ItemOption::with('optionGroup')->where('is_available', true)
                     ->find($optionId['option_id']);
                 // dd($option);
-                if (!$option) {
+                if (! $option) {
                     throw ValidationException::withMessages([
                         'options' => 'Invalid option selected',
                     ]);
@@ -191,7 +187,7 @@ class PlaceOrderService
 
         return [
             'invoice' => $invoice,
-            'distance_km' => $result['distance_km']
+            'distance_km' => $result['distance_km'],
         ];
     }
 
@@ -205,7 +201,7 @@ class PlaceOrderService
             'payment_method' => $paymentMethod,
             'payment_status' => 'pending',
             'amount' => $amount,
-            'transaction_reference' => 'TXN-' . uniqid(),
+            'transaction_reference' => 'TXN-'.uniqid(),
         ]);
     }
 
@@ -222,7 +218,7 @@ class PlaceOrderService
         $branch = $order->branch;
 
         // Check branch is open
-        if (!$this->isBranchOpen($branch)) {
+        if (! $this->isBranchOpen($branch)) {
             throw ValidationException::withMessages([
                 'branch' => 'Branch is currently closed. Please try again later.',
             ]);
@@ -230,7 +226,7 @@ class PlaceOrderService
 
         // Check payment method
         $validMethods = ['cash', 'card', 'wallet'];
-        if (!in_array($order->payment->payment_method, $validMethods)) {
+        if (! in_array($order->payment->payment_method, $validMethods)) {
             throw ValidationException::withMessages([
                 'payment_method' => 'Invalid payment method',
             ]);
@@ -265,7 +261,7 @@ class PlaceOrderService
                 })
                 ->first();
 
-            if (!$hours) {
+            if (! $hours) {
                 return false;
             }
 
@@ -282,7 +278,7 @@ class PlaceOrderService
      */
     private function generateOrderNumber(): string
     {
-        return 'ORD-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+        return 'ORD-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -6));
     }
 
     /**
@@ -359,7 +355,7 @@ class PlaceOrderService
             ->forUserViaPermission($user)
             ->find($id);
 
-        if (!$order) {
+        if (! $order) {
             return [
                 'data' => null,
                 'message' => 'order not found',
@@ -367,14 +363,13 @@ class PlaceOrderService
             ];
         }
 
-        if (!in_array($order->status, ['pending', 'confirmed'])) {
+        if (! in_array($order->status, ['pending', 'confirmed'])) {
             return [
                 'data' => null,
                 'message' => 'Orders can only be updated brafore preparing status',
                 'code' => 400,
             ];
         }
-
 
         // Update order fields
         $order->update([
@@ -424,7 +419,6 @@ class PlaceOrderService
             'message' => 'Order updated successfully',
             'code' => 200,
         ];
-
 
     }
 }
