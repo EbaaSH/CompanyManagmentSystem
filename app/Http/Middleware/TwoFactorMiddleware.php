@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\OTP;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,8 +17,8 @@ class TwoFactorMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $user = auth()->user();
-
-        if (! $user || ! $user->phone_verified_at) {
+        $otp = OTP::where('phone', $user->phone)->latest()->first();
+        if (!$user || !$user->phone_verified_at || $otp->used == false) {
             return response()->json([
                 'status' => 0,
                 'data' => [],

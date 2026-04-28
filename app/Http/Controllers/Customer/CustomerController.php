@@ -69,5 +69,5 @@ class CustomerController extends Controller
         }
     }
 
-    
+
 }

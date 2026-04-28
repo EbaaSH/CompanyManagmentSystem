@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers\Driver;
 
+use App\Action\Delivery\DeliveryAccept;
+use App\Action\Delivery\DeliveryDeliver;
+use App\Action\Delivery\DeliveryFail;
+use App\Action\Delivery\DeliveryPickup;
+use App\Action\Delivery\DeliveryReject;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Driver\AcceptDeliveryRequest;
 use App\Http\Requests\Driver\DeliverOrderRequest;
@@ -17,46 +22,53 @@ use Throwable;
 class DeliveryController extends Controller
 {
     use UploadImage;
-
+    private $acceptDelivery;
+    private $rejectDelivery;
+    private $pickupDelivery;
+    private $deliverDelivery;
+    private $failDelivery;
     /**
      * Get all assigned deliveries for driver
      */
-    public function getMyDeliveries()
-    {
-        try {
-            $driverId = auth()->user()->driverProfile->id;
+    // public function getMyDeliveries()
+    // {
+    //     try {
+    //         $driverId = auth()->user()->driverProfile->id;
 
-            $deliveries = Delivery::where('driver_id', $driverId)
-                ->with([
-                    'order.customer.user',
-                    'order.deliveryAddress',
-                    'order.orderItems.menuItem',
-                    'order.branch',
-                    'statusHistories',
-                ])
-                ->whereIn('delivery_status', ['assigned', 'accepted', 'picked_up'])
-                ->latest()
-                ->paginate(15);
+    //         $deliveries = Delivery::where('driver_id', $driverId)
+    //             ->with([
+    //                 'order.customer.user',
+    //                 'order.deliveryAddress',
+    //                 'order.orderItems.menuItem',
+    //                 'order.branch',
+    //                 'statusHistories',
+    //             ])
+    //             ->whereIn('delivery_status', ['assigned', 'accepted', 'picked_up'])
+    //             ->latest()
+    //             ->paginate(15);
 
-            return Response::Success($deliveries, 'My deliveries retrieved', 200);
+    //         return Response::Success($deliveries, 'My deliveries retrieved', 200);
 
-        } catch (Throwable $th) {
-            return Response::Error([], $th->getMessage());
-        }
-    }
+    //     } catch (Throwable $th) {
+    //         return Response::Error([], $th->getMessage());
+    //     }
+    // }
 
     /**
      * Accept delivery assignment
      * Driver accepts the delivery order
      */
-    public function accept(AcceptDeliveryRequest $request, $deliveryId)
+    public function accept($deliveryId)
     {
         try {
-            $delivery = Delivery::find($deliveryId);
-            if (! $delivery) {
+            $user = auth()->user();
+            $delivery = Delivery::query()
+                ->forUserViaPermission($user)
+                ->find($deliveryId);
+            if (!$delivery) {
                 return Response::Error(null, 'delivery not found', 404);
             }
-            $this->authorize('update', $delivery);
+            $this->authorize('accept', $delivery);
 
             if ($delivery->delivery_status !== 'assigned') {
                 return Response::Error([], 'Delivery must be in assigned status');
@@ -68,7 +80,8 @@ class DeliveryController extends Controller
 
             DB::beginTransaction();
 
-            $delivery->accept(auth()->id());
+            $this->acceptDelivery = new DeliveryAccept($delivery);
+            $this->acceptDelivery->accept($user->id);
 
             DB::commit();
 
@@ -92,8 +105,11 @@ class DeliveryController extends Controller
     public function reject(RejectDeliveryRequest $request, $deliveryId)
     {
         try {
-            $delivery = Delivery::findOrFail($deliveryId);
-            $this->authorize('update', $delivery);
+            $user = auth()->user();
+            $delivery = Delivery::query()
+                ->forUserViaPermission($user)
+                ->find($deliveryId);
+            $this->authorize('reject', $delivery);
 
             if ($delivery->delivery_status !== 'assigned') {
                 return Response::Error([], 'Can only reject assigned deliveries');
@@ -104,8 +120,8 @@ class DeliveryController extends Controller
             }
 
             DB::beginTransaction();
-
-            $delivery->reject(auth()->id(), $request->reason);
+            $this->rejectDelivery = new DeliveryReject($delivery);
+            $this->rejectDelivery->reject($user->id, $request->reason);
 
             DB::commit();
 
@@ -126,26 +142,30 @@ class DeliveryController extends Controller
      * Pickup order from branch
      * Driver picks up order from branch
      */
-    public function pickup(PickupOrderRequest $request, $deliveryId)
+    public function pickup($deliveryId)
     {
         try {
-            $delivery = Delivery::findOrFail($deliveryId);
-            if (! $delivery) {
+            $user = auth()->user();
+            $delivery = Delivery::query()
+                ->forUserViaPermission($user)
+                ->find($deliveryId);
+            if (!$delivery) {
                 return Response::Error(null, 'delivery not found', 404);
             }
-            $this->authorize('update', $delivery);
+            $this->authorize('pickup', $delivery);
 
             if ($delivery->delivery_status !== 'accepted') {
                 return Response::Error([], 'Delivery must be accepted first');
             }
 
-            if ($delivery->driver_id !== auth()->user()->driverProfile->id) {
+            if ($delivery->driver_id !== $user->driverProfile->id) {
                 return Response::Error([], 'This delivery is not assigned to you');
             }
 
             DB::beginTransaction();
 
-            $delivery->pickUp(auth()->id());
+            $this->pickupDelivery = new DeliveryPickup($delivery);
+            $this->pickupDelivery->pickUp($user->id);
 
             DB::commit();
 
@@ -169,19 +189,21 @@ class DeliveryController extends Controller
     public function deliver(DeliverOrderRequest $request, $deliveryId)
     {
         try {
-            $delivery = Delivery::find($deliveryId);
-
-            if (! $delivery) {
-                return Response::Error(null, 'deliverey not found', 404);
+            $user = auth()->user();
+            $delivery = Delivery::query()
+                ->forUserViaPermission($user)
+                ->find($deliveryId);
+            if (!$delivery) {
+                return Response::Error(null, 'delivery not found', 404);
             }
+            $this->authorize('deliver', $delivery);
 
-            $this->authorize('update', $delivery);
 
             if ($delivery->delivery_status !== 'picked_up') {
                 return Response::Error([], 'Order must be picked up first');
             }
 
-            if ($delivery->driver_id !== auth()->user()->driverProfile->id) {
+            if ($delivery->driver_id !== $user->driverProfile->id) {
                 return Response::Error([], 'This delivery is not assigned to you');
             }
 
@@ -189,12 +211,14 @@ class DeliveryController extends Controller
 
             $path = $this->uploadImage($request, "delivery/driver/{$delivery->driver_id}/proof", 'image');
 
-            if (! $path['success']) {
+            if (!$path['success']) {
                 return Response::Error(null, 'the image not uploaded', 400);
             }
 
-            $delivery->deliver(
-                auth()->id(),
+            $this->deliverDelivery = new DeliveryDeliver($delivery);
+
+            $this->deliverDelivery->deliver(
+                $user->id,
                 $path['data'],
                 $request->delivery_notes
             );
@@ -221,20 +245,27 @@ class DeliveryController extends Controller
     public function fail(FailDeliveryRequest $request, $deliveryId)
     {
         try {
-            $delivery = Delivery::findOrFail($deliveryId);
-            $this->authorize('update', $delivery);
+            $user = auth()->user();
+            $delivery = Delivery::query()
+                ->forUserViaPermission($user)
+                ->find($deliveryId);
+            if (!$delivery) {
+                return Response::Error(null, 'delivery not found', 404);
+            }
+            $this->authorize('fail', $delivery);
 
             if ($delivery->delivery_status !== 'picked_up') {
                 return Response::Error([], 'Can only fail deliveries that are picked up');
             }
 
-            if ($delivery->driver_id !== auth()->user()->driverProfile->id) {
+            if ($delivery->driver_id !== $user->driverProfile->id) {
                 return Response::Error([], 'This delivery is not assigned to you');
             }
 
             DB::beginTransaction();
 
-            $delivery->fail(auth()->id(), $request->reason);
+            $this->failDelivery = new DeliveryFail($delivery);
+            $this->failDelivery->fail($user->id, $request->reason);
 
             DB::commit();
 
@@ -258,24 +289,24 @@ class DeliveryController extends Controller
     /**
      * Get delivery details
      */
-    public function show($deliveryId)
-    {
-        try {
-            $delivery = Delivery::with([
-                'order.orderItems.menuItem',
-                'order.customer.user',
-                'order.deliveryAddress',
-                'order.branch',
-                'driver.user',
-                'statusHistories',
-            ])->findOrFail($deliveryId);
+    // public function show($deliveryId)
+    // {
+    //     try {
+    //         $delivery = Delivery::with([
+    //             'order.orderItems.menuItem',
+    //             'order.customer.user',
+    //             'order.deliveryAddress',
+    //             'order.branch',
+    //             'driver.user',
+    //             'statusHistories',
+    //         ])->findOrFail($deliveryId);
 
-            $this->authorize('view', $delivery);
+    //         $this->authorize('view', $delivery);
 
-            return Response::Success($delivery, 'Delivery details retrieved', 200);
+    //         return Response::Success($delivery, 'Delivery details retrieved', 200);
 
-        } catch (Throwable $th) {
-            return Response::Error([], $th->getMessage());
-        }
-    }
+    //     } catch (Throwable $th) {
+    //         return Response::Error([], $th->getMessage());
+    //     }
+    // }
 }

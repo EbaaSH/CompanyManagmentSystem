@@ -58,6 +58,10 @@ class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
+    public function otp()
+    {
+        return $this->hasMany(OTP::class, 'user_id');
+    }
     // The company this user owns (company-manager anchor)
     public function ownedCompany(): HasOne
     {

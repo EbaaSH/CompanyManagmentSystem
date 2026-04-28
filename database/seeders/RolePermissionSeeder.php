@@ -94,6 +94,11 @@ class RolePermissionSeeder extends Seeder
             'deliveries.scope.branch',
             'deliveries.scope.own',
             'deliveries.write',
+            'deliveries.accept',
+            'deliveries.reject',
+            'deliveries.pickup',
+            'deliveries.deliver',
+            'deliveries.fail',
 
             // Menus
             'menus.scope.all',
@@ -229,7 +234,12 @@ class RolePermissionSeeder extends Seeder
                 'drivers.scope.own',        // own profile only
                 'orders.scope.assigned',    // read-only — no orders.write
                 'deliveries.scope.own',
-                'deliveries.write',         // driver can update their own delivery status
+                'deliveries.write',
+                'deliveries.accept',
+                'deliveries.reject',
+                'deliveries.pickup',
+                'deliveries.deliver',
+                'deliveries.fail',       // driver can update their own delivery status
             ]);
 
         // ── customer ─────────────────────────────────────────────────

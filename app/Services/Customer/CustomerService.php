@@ -29,7 +29,7 @@ class CustomerService
 
         $user->assignRole('customer');
 
-        // $this->otpService->sendOtp($user->phone);
+        $this->otpService->sendOtp($user->phone);
 
         $token = JWTAuth::fromUser($user);
 

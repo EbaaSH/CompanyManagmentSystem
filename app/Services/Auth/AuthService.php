@@ -74,7 +74,7 @@ class AuthService
             return ['data' => null, 'message' => 'Unauthorized', 'code' => 401];
         }
 
-        // $this->otpService->sendOtp($request->phone);
+        $this->otpService->sendOtp($request->phone);
 
         // Return success response with token
         return ['data' => $this->respondWithToken($token), 'message' => 'Login successful', 'code' => 200];

@@ -6,6 +6,7 @@ use App\Http\Responses\Response;
 use App\Models\Menu\MenuItem;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class CreateOrderRequest extends FormRequest
@@ -23,7 +24,13 @@ class CreateOrderRequest extends FormRequest
         return [
             'company_id' => 'required|exists:companies,id',
             'branch_id' => 'required|exists:branches,id',
-            'delivery_address_id' => 'required|exists:customer_addresses,id',
+            'delivery_address_id' => [
+                'required',
+                Rule::exists('customer_addresses', 'id')
+                    ->where(function ($query) {
+                        $query->where('customer_id', auth()->user()->customerProfile->id);
+                    }),
+            ],
             'notes' => 'nullable|string',
             'payment_method' => 'required|in:cash,card,wallet',
 

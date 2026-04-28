@@ -36,7 +36,7 @@ class OrderController extends Controller
             $order = Order::query()
                 ->forUserViaPermission($user)
                 ->find($orderId);
-            if (! $order) {
+            if (!$order) {
                 return Response::Error(null, 'order not found', 404);
             }
             $this->authorize('markPreparing', $order);
@@ -79,7 +79,7 @@ class OrderController extends Controller
             $order = Order::query()
                 ->forUserViaPermission($user)
                 ->find($orderId);
-            if (! $order) {
+            if (!$order) {
                 return Response::Error(null, 'order not found', 404);
             }
             $this->authorize('markReady', $order);
@@ -118,12 +118,12 @@ class OrderController extends Controller
             $order = Order::query()
                 ->forUserViaPermission($user)
                 ->find($orderId);
-            if (! $order) {
+            if (!$order) {
                 return Response::Error(null, 'order not found', 404);
             }
             $this->authorize('reject', $order);
 
-            if ($order->status != 'pending' || $order->status != 'confirmed') {
+            if ($order->status !== 'pending' && $order->status !== 'confirmed') {
                 return Response::Error([], 'Can only reject pending or cofirmed orders');
             }
 

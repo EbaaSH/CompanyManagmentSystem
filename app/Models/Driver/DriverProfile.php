@@ -50,6 +50,7 @@ class DriverProfile extends Model
     public function setAvailability($available)
     {
         $this->availability_status = $available;
+        $this->save();
     }
 
     // ─── Scope: Role-based ────────────────────────────────────────────

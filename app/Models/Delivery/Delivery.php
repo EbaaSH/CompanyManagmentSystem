@@ -29,7 +29,7 @@ class Delivery extends Model
 
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(Order::class, 'order_id');
     }
 
     public function driver(): BelongsTo
@@ -202,124 +202,121 @@ class Delivery extends Model
      * DRIVER PICKS UP ORDER
      * Called when driver physically picks up from branch
      */
-    public function pickUp($userId)
-    {
-        if ($this->delivery_status !== 'accepted') {
-            throw new \Exception('Delivery must be accepted before pickup');
-        }
+    // public function pickUp($userId)
+    // {
 
-        $this->update([
-            'delivery_status' => 'picked_up',
-            'picked_up_at' => now(),
-        ]);
+    //     $this->update([
+    //         'delivery_status' => 'picked_up',
+    //         'picked_up_at' => now(),
+    //     ]);
 
-        $this->recordStatusHistory('accepted', 'picked_up', $userId);
+    //     $this->recordStatusHistory('accepted', 'picked_up', $userId);
 
-        // Fire event
-        event(new OrderPickedUp($this->order));
+    //     // Fire event
+    //     event(new OrderPickedUp($this->order));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * DRIVER DELIVERS ORDER
      * Called when driver delivers to customer
      */
-    public function deliver($userId, $proofImageUrl = null, $notes = null)
-    {
-        if ($this->delivery_status !== 'picked_up') {
-            throw new \Exception('Order must be picked up before delivery');
-        }
+    // public function deliver($userId, $proofImageUrl = null, $notes = null)
+    // {
+    //     if ($this->delivery_status !== 'picked_up') {
+    //         throw new \Exception('Order must be picked up before delivery');
+    //     }
 
-        $this->update([
-            'delivery_status' => 'delivered',
-            'delivered_at' => now(),
-            'proof_image_url' => $proofImageUrl,
-            'delivery_notes' => $notes,
-        ]);
+    //     $this->update([
+    //         'delivery_status' => 'delivered',
+    //         'delivered_at' => now(),
+    //         'proof_image_url' => $proofImageUrl,
+    //         'delivery_notes' => $notes,
+    //     ]);
 
-        $this->recordStatusHistory('picked_up', 'delivered', $userId);
+    //     $this->recordStatusHistory('picked_up', 'delivered', $userId);
 
-        // Update order status
-        $this->order->update(['status' => 'delivered']);
-        $this->order->recordStatusHistory('picked_up', 'delivered', $userId);
+    //     // Update order status
+    //     $this->order->update(['status' => 'delivered']);
+    //     $this->order->recordStatusHistory('picked_up', 'delivered', $userId);
 
-        // Process payment
-        $this->processPayment();
+    //     // Process payment
+    //     $this->processPayment();
 
-        // Fire event
-        event(new OrderDelivered($this->order));
+    //     // Fire event
+    //     event(new OrderDelivered($this->order));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * DELIVERY FAILED
      * Called when delivery attempt fails (customer not home, etc.)
      * Triggers automatic retry logic
      */
-    public function fail($userId, $reason = null)
-    {
-        if ($this->delivery_status !== 'picked_up') {
-            throw new \Exception('Can only fail deliveries that are picked up');
-        }
+    // public function fail($userId, $reason = null)
+    // {
+    //     if ($this->delivery_status !== 'picked_up') {
+    //         throw new \Exception('Can only fail deliveries that are picked up');
+    //     }
 
-        $this->increment('retry_attempt');
+    //     $this->increment('retry_attempt');
 
-        // Max 3 retry attempts
-        if ($this->retry_attempt >= 3) {
-            $this->update(['delivery_status' => 'failed']);
-            $this->order->update(['status' => 'failed_delivery']);
-            $this->order->recordStatusHistory('picked_up', 'failed_delivery', $userId, "Delivery failed after {$this->retry_attempt} attempts. Reason: {$reason}");
+    //     // Max 3 retry attempts
+    //     if ($this->retry_attempt >= 3) {
+    //         $this->update(['delivery_status' => 'failed']);
+    //         $this->order->update(['status' => 'failed_delivery']);
+    //         $this->order->recordStatusHistory('picked_up', 'failed_delivery', $userId, "Delivery failed after {$this->retry_attempt} attempts. Reason: {$reason}");
 
-            // Notify customer of options (refund, reschedule, pickup)
-            event(new DeliveryFailed($this, $reason));
+    //         // Notify customer of options (refund, reschedule, pickup)
+    //         event(new DeliveryFailed($this, $reason));
 
-            return $this;
-        }
+    //         return $this;
+    //     }
 
-        // Schedule retry
-        $retryTime = match ($this->retry_attempt) {
-            1 => now()->addHours(2), // Retry in 2 hours
-            2 => now()->addDay(), // Retry next day
-            default => now()->addHours(4),
-        };
+    //     // Schedule retry
+    //     $retryTime = match ($this->retry_attempt) {
+    //         1 => now()->addHours(2), // Retry in 2 hours
+    //         2 => now()->addDay(), // Retry next day
+    //         default => now()->addHours(4),
+    //     };
 
-        $this->update([
-            'delivery_status' => 'unassigned',
-            'driver_id' => null,
-            'scheduled_retry_at' => $retryTime,
-        ]);
+    //     $this->update([
+    //         'delivery_status' => 'unassigned',
+    //         'driver_id' => null,
+    //         'scheduled_retry_at' => $retryTime,
+    //     ]);
 
-        $this->recordStatusHistory('picked_up', 'unassigned', $userId, "Failed delivery - Retry {$this->retry_attempt}. Reason: {$reason}");
+    //     $this->recordStatusHistory('picked_up', 'unassigned', $userId, "Failed delivery - Retry {$this->retry_attempt}. Reason: {$reason}");
 
-        // Fire event
-        event(new DeliveryFailed($this, $reason));
+    //     // Fire event
+    //     event(new DeliveryFailed($this, $reason));
 
-        // Queue retry job for scheduled time
-        AssignDriverJob::dispatch($this->order)->delay($retryTime);
+    //     // Queue retry job for scheduled time
+    //     AssignDriverJob::dispatch($this->order)->delay($retryTime);
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * PROCESS PAYMENT
      * Mark payment as paid after successful delivery
      */
-    private function processPayment()
-    {
-        $payment = $this->order->payment ?? Payment::where('order_id', $this->order_id)->first();
+    // private function processPayment()
+    // {
+    //     $payment = $this->order->payment ?? Payment::where('order_id', $this->order_id)->first();
 
-        if ($payment && $payment->payment_status === 'pending') {
-            $payment->update([
-                'payment_status' => 'paid',
-                'paid_at' => now(),
-            ]);
+    //     if ($payment && $payment->payment_status === 'pending') {
+    //         $payment->update([
+    //             'payment_status' => 'paid',
+    //             'paid_at' => now(),
+    //         ]);
 
-            // Fire event
-            event(new PaymentProcessed($payment));
-        }
-    }
+    //         // Fire event
+    //         event(new PaymentProcessed($payment));
+    //     }
+    // }
 
     /**
      * Record delivery status history (audit trail)

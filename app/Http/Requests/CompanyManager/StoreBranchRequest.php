@@ -93,7 +93,7 @@ class StoreBranchRequest extends FormRequest
             ],
             'drivers.*.vehicle_type' => 'nullable|string|max:100',
             'drivers.*.plate_number' => 'nullable|string|max:50',
-            'drivers.*.availability_status' => 'nullable|in:online,offline,busy',
+            'drivers.*.availability_status' => 'nullable|in:online,offline,busy,available',
             'drivers.*.is_active' => 'nullable|boolean',
         ];
     }

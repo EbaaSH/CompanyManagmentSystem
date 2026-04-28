@@ -16,10 +16,6 @@ class HandleOrderDelivered
         //
     }
 
-    /**
-     * Handle order delivered
-     * WORKFLOW: Order delivered → Payment processed → Loyalty points awarded → Rating request
-     */
     public function handle(OrderDelivered $event)
     {
         $order = $event->order;
@@ -43,21 +39,12 @@ class HandleOrderDelivered
             'message' => "Thank you! Order #{$order->order_number} delivered. You earned {$loyaltyPoints} loyalty points.",
         ]);
 
-        // Request rating after 5 minutes
-        $this->scheduleRatingRequest($order);
-
         // Update driver to available
         if ($order->delivery && $order->delivery->driver) {
             $order->delivery->driver->update(['availability_status' => 'available']);
         }
     }
 
-    /**
-     * Schedule rating request job
-     */
-    private function scheduleRatingRequest($order)
-    {
-        // Dispatch job to ask for rating after 5 minutes
-        // \App\Jobs\RequestOrderRatingJob::dispatch($order)->delay(now()->addMinutes(5));
-    }
+
+
 }

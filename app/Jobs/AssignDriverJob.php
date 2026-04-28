@@ -21,7 +21,9 @@ class AssignDriverJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(private Order $order) {}
+    public function __construct(private Order $order)
+    {
+    }
 
     public $tries = 20; // Max 20 retry attempts
 
