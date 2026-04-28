@@ -28,6 +28,7 @@ class DeliveryReject
 
     public function reject($userId, $reason = null)
     {
+        $driver = $this->delivery->driver;
 
         $this->delivery->update([
             'delivery_status' => 'rejected',
@@ -38,6 +39,7 @@ class DeliveryReject
 
         // Immediately trigger re-assignment
         AssignDriverJob::dispatch($this->delivery->order);
+        $driver->setAvailability('available');
 
         return $this->delivery;
     }

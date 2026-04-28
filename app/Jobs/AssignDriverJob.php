@@ -60,15 +60,6 @@ class AssignDriverJob implements ShouldQueue
         }
     }
 
-    /**
-     * Find best driver using load balancing
-     * Criteria:
-     * 1. Available status
-     * 2. Active
-     * 3. Same branch
-     * 4. Least current deliveries (load balanced)
-     * 5. Closest to branch (optional, with geolocation)
-     */
     private function findBestDriver(): ?DriverProfile
     {
         return DriverProfile::where('branch_id', $this->order->branch_id)

@@ -50,6 +50,7 @@ class DeliveryFail
             2 => now()->addMinutes(5),
             default => now()->addMinutes(10),
         };
+        $driver = $this->delivery->driver;
 
         $this->delivery->update([
             'delivery_status' => 'unassigned',
@@ -64,6 +65,7 @@ class DeliveryFail
 
         // Queue retry job for scheduled time
         AssignDriverJob::dispatch($this->delivery->order)->delay($retryTime);
+        $driver->setAvailability('available');
 
         return $this->delivery;
     }
