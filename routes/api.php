@@ -161,7 +161,6 @@ Route::middleware(['auth:api', TwoFactorMiddleware::class])
         });
     });
 
-
 // ===== DRIVER DELIVERY ROUTES =====
 Route::middleware(['auth:api', TwoFactorMiddleware::class])->group(function () {
     Route::prefix('driver/deliveries')->group(function () {
@@ -185,4 +184,3 @@ Route::middleware(['auth:api', TwoFactorMiddleware::class])
             Route::get('/{id}', [DeliveryQueryController::class, 'show']);
         });
     });
-

@@ -41,5 +41,4 @@ class DeliveryReject
 
         return $this->delivery;
     }
-
 }

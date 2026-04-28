@@ -3,6 +3,8 @@
 namespace App\Http\Requests\SuperAdmin;
 
 use App\Http\Responses\Response;
+use App\Models\Company\Company;
+use App\Models\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
@@ -26,15 +28,16 @@ class UpdateCompanyRequest extends FormRequest
             'phone' => [
                 'sometimes',
                 'string',
+                'phone:ALL',
                 'max:30',
                 function ($attribute, $value, $fail) {
-                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
-                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+                    $existsInUsers = User::where('phone', $value)->exists();
+                    $existsInCompanies = Company::where('phone', $value)->exists();
 
                     if ($existsInUsers || $existsInCompanies) {
                         $fail('This phone number is already in use.');
                     }
-                }
+                },
             ],
             'status' => 'sometimes|in:active,inactive',
 
@@ -43,18 +46,19 @@ class UpdateCompanyRequest extends FormRequest
             'manager_phone' => [
                 'sometimes',
                 'string',
+                'phone:ALL',
                 'max:30',
                 function ($attribute, $value, $fail) {
-                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
-                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+                    $existsInUsers = User::where('phone', $value)->exists();
+                    $existsInCompanies = Company::where('phone', $value)->exists();
 
                     if ($existsInUsers || $existsInCompanies) {
                         $fail('This phone number is already in use.');
                     }
-                }
+                },
             ],
             'manager_email' => "sometimes|email|unique:users,email,{$this->user()->id}",
-            'password' => "sometimes|string|min:8",
+            'password' => 'sometimes|string|min:8',
         ];
     }
 

@@ -395,6 +395,11 @@ class PlaceOrderService
             $address->latitude,
             $address->longitude
         );
+        if ($result['distance_km'] > 150) {
+            throw ValidationException::withMessages([
+                'delivery' => 'Delivery not available for this distance',
+            ]);
+        }
         $order->orderInvoice()->update([
             'subtotal' => $subtotal,
             'total' => $subtotal + $result['delivery_fee'] + $result['tax'],

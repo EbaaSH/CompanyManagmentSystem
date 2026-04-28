@@ -3,6 +3,8 @@
 namespace App\Http\Requests\SuperAdmin;
 
 use App\Http\Responses\Response;
+use App\Models\Company\Company;
+use App\Models\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
@@ -24,15 +26,16 @@ class StoreCompanyRequest extends FormRequest
             'phone' => [
                 'required',
                 'string',
+                'phone:ALL',
                 'max:30',
                 function ($attribute, $value, $fail) {
-                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
-                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+                    $existsInUsers = User::where('phone', $value)->exists();
+                    $existsInCompanies = Company::where('phone', $value)->exists();
 
                     if ($existsInUsers || $existsInCompanies) {
                         $fail('This phone number is already in use.');
                     }
-                }
+                },
             ],
             'status' => 'nullable|in:active,inactive',
 
@@ -41,15 +44,16 @@ class StoreCompanyRequest extends FormRequest
             'manager_phone' => [
                 'required',
                 'string',
+                'phone:ALL',
                 'max:30',
                 function ($attribute, $value, $fail) {
-                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
-                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+                    $existsInUsers = User::where('phone', $value)->exists();
+                    $existsInCompanies = Company::where('phone', $value)->exists();
 
                     if ($existsInUsers || $existsInCompanies) {
                         $fail('This phone number is already in use.');
                     }
-                }
+                },
             ],
             'manager_email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',

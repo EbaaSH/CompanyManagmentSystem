@@ -8,7 +8,6 @@ use App\Action\Delivery\DeliveryFail;
 use App\Action\Delivery\DeliveryPickup;
 use App\Action\Delivery\DeliveryReject;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Driver\AcceptDeliveryRequest;
 use App\Http\Requests\Driver\DeliverOrderRequest;
 use App\Http\Requests\Driver\FailDeliveryRequest;
 use App\Http\Requests\Driver\RejectDeliveryRequest;
@@ -21,37 +20,16 @@ use Throwable;
 class DeliveryController extends Controller
 {
     use UploadImage;
+
     private $acceptDelivery;
+
     private $rejectDelivery;
+
     private $pickupDelivery;
+
     private $deliverDelivery;
+
     private $failDelivery;
-    /**
-     * Get all assigned deliveries for driver
-     */
-    // public function getMyDeliveries()
-    // {
-    //     try {
-    //         $driverId = auth()->user()->driverProfile->id;
-
-    //         $deliveries = Delivery::where('driver_id', $driverId)
-    //             ->with([
-    //                 'order.customer.user',
-    //                 'order.deliveryAddress',
-    //                 'order.orderItems.menuItem',
-    //                 'order.branch',
-    //                 'statusHistories',
-    //             ])
-    //             ->whereIn('delivery_status', ['assigned', 'accepted', 'picked_up'])
-    //             ->latest()
-    //             ->paginate(15);
-
-    //         return Response::Success($deliveries, 'My deliveries retrieved', 200);
-
-    //     } catch (Throwable $th) {
-    //         return Response::Error([], $th->getMessage());
-    //     }
-    // }
 
     /**
      * Accept delivery assignment
@@ -64,7 +42,7 @@ class DeliveryController extends Controller
             $delivery = Delivery::query()
                 ->forUserViaPermission($user)
                 ->find($deliveryId);
-            if (!$delivery) {
+            if (! $delivery) {
                 return Response::Error(null, 'delivery not found', 404);
             }
             $this->authorize('accept', $delivery);
@@ -148,7 +126,7 @@ class DeliveryController extends Controller
             $delivery = Delivery::query()
                 ->forUserViaPermission($user)
                 ->find($deliveryId);
-            if (!$delivery) {
+            if (! $delivery) {
                 return Response::Error(null, 'delivery not found', 404);
             }
             $this->authorize('pickup', $delivery);
@@ -192,11 +170,10 @@ class DeliveryController extends Controller
             $delivery = Delivery::query()
                 ->forUserViaPermission($user)
                 ->find($deliveryId);
-            if (!$delivery) {
+            if (! $delivery) {
                 return Response::Error(null, 'delivery not found', 404);
             }
             $this->authorize('deliver', $delivery);
-
 
             if ($delivery->delivery_status !== 'picked_up') {
                 return Response::Error([], 'Order must be picked up first');
@@ -210,7 +187,7 @@ class DeliveryController extends Controller
 
             $path = $this->uploadImage($request, "delivery/driver/{$delivery->driver_id}/proof", 'image');
 
-            if (!$path['success']) {
+            if (! $path['success']) {
                 return Response::Error(null, 'the image not uploaded', 400);
             }
 
@@ -248,7 +225,7 @@ class DeliveryController extends Controller
             $delivery = Delivery::query()
                 ->forUserViaPermission($user)
                 ->find($deliveryId);
-            if (!$delivery) {
+            if (! $delivery) {
                 return Response::Error(null, 'delivery not found', 404);
             }
             $this->authorize('fail', $delivery);

@@ -36,7 +36,7 @@ class OrderController extends Controller
             $order = Order::query()
                 ->forUserViaPermission($user)
                 ->find($orderId);
-            if (!$order) {
+            if (! $order) {
                 return Response::Error(null, 'order not found', 404);
             }
             $this->authorize('markPreparing', $order);
@@ -79,7 +79,7 @@ class OrderController extends Controller
             $order = Order::query()
                 ->forUserViaPermission($user)
                 ->find($orderId);
-            if (!$order) {
+            if (! $order) {
                 return Response::Error(null, 'order not found', 404);
             }
             $this->authorize('markReady', $order);
@@ -118,7 +118,7 @@ class OrderController extends Controller
             $order = Order::query()
                 ->forUserViaPermission($user)
                 ->find($orderId);
-            if (!$order) {
+            if (! $order) {
                 return Response::Error(null, 'order not found', 404);
             }
             $this->authorize('reject', $order);
@@ -146,58 +146,4 @@ class OrderController extends Controller
             return Response::Error([], $th->getMessage());
         }
     }
-
-    /**
-     * Get all orders for kitchen (by branch)
-     */
-    // public function getKitchenOrders()
-    // {
-    //     try {
-    //         $this->authorize('viewAny', Order::class);
-
-    //         $branchId = auth()->user()->employeeProfile->branch_id;
-
-    //         $orders = Order::where('branch_id', $branchId)
-    //             ->whereIn('status', ['confirmed', 'preparing', 'ready_for_pickup'])
-    //             ->with(['orderItems', 'customer', 'delivery'])
-    //             ->latest()
-    //             ->paginate(15);
-
-    //         return Response::Success($orders, 'Kitchen orders retrieved', 200);
-
-    //     } catch (Throwable $th) {
-    //         return Response::Error([], $th->getMessage());
-    //     }
-    // }
-
-    /**
-     * Get specific order details
-     */
-    // public function show($orderId)
-    // {
-    //     try {
-    //         $order = Order::find($orderId);
-    //         if (! $order) {
-    //             return Response::Error(null, 'order not found', 404);
-    //         }
-
-    //         $this->authorize('view', $order);
-
-    //         $order = Order::with([
-    //             'orderItems.menuItem',
-    //             'orderItems.orderItemOptions',
-    //             'customer.user',
-    //             'delivery.driver.user',
-    //             'delivery.statusHistories',
-    //             'statusHistories',
-    //             'orderInvoice',
-    //             'payment',
-    //         ])->findOrFail($orderId);
-
-    //         return Response::Success($order, 'Order details retrieved', 200);
-
-    //     } catch (Throwable $th) {
-    //         return Response::Error([], $th->getMessage());
-    //     }
-    // }
 }

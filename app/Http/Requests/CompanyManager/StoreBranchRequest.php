@@ -3,6 +3,8 @@
 namespace App\Http\Requests\CompanyManager;
 
 use App\Http\Responses\Response;
+use App\Models\Company\Company;
+use App\Models\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
@@ -23,15 +25,16 @@ class StoreBranchRequest extends FormRequest
             'manager_phone' => [
                 'required',
                 'string',
+                'phone:ALL',
                 'max:30',
                 function ($attribute, $value, $fail) {
-                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
-                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+                    $existsInUsers = User::where('phone', $value)->exists();
+                    $existsInCompanies = Company::where('phone', $value)->exists();
 
                     if ($existsInUsers || $existsInCompanies) {
                         $fail('This phone number is already in use.');
                     }
-                }
+                },
             ],
             'password' => 'required|string|min:8',
 
@@ -42,6 +45,7 @@ class StoreBranchRequest extends FormRequest
             'city' => 'required|string|max:100',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'phone' => 'nullable|string|max:30|phone:ALL',
             'is_active' => 'nullable|boolean',
 
             // Weekly Schedule
@@ -58,15 +62,16 @@ class StoreBranchRequest extends FormRequest
             'employees.*.phone' => [
                 'required',
                 'string',
+                'phone:ALL',
                 'max:30',
                 function ($attribute, $value, $fail) {
-                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
-                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+                    $existsInUsers = User::where('phone', $value)->exists();
+                    $existsInCompanies = Company::where('phone', $value)->exists();
 
                     if ($existsInUsers || $existsInCompanies) {
                         $fail('This phone number is already in use.');
                     }
-                }
+                },
             ],
             'employees.*.job_title_id' => 'nullable|exists:job_titles,id',
             'employees.*.shift_id' => 'nullable|exists:shifts,id',
@@ -81,15 +86,16 @@ class StoreBranchRequest extends FormRequest
             'drivers.*.phone' => [
                 'required',
                 'string',
+                'phone:ALL',
                 'max:30',
                 function ($attribute, $value, $fail) {
-                    $existsInUsers = \App\Models\User::where('phone', $value)->exists();
-                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+                    $existsInUsers = User::where('phone', $value)->exists();
+                    $existsInCompanies = Company::where('phone', $value)->exists();
 
                     if ($existsInUsers || $existsInCompanies) {
                         $fail('This phone number is already in use.');
                     }
-                }
+                },
             ],
             'drivers.*.vehicle_type' => 'nullable|string|max:100',
             'drivers.*.plate_number' => 'nullable|string|max:50',

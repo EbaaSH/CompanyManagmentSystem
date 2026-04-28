@@ -5,7 +5,9 @@ namespace App\Services\Auth;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use libphonenumber\NumberParseException;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Propaganistas\LaravelPhone\PhoneNumber;
 use Spatie\Permission\Models\Role;
 
 class AuthService
@@ -67,17 +69,38 @@ class AuthService
      */
     public function login($request)
     {
-        $credentials = $request->only('phone', 'password');
 
-        // Attempt to create a token
-        if (!$token = JWTAuth::attempt($credentials)) {
-            return ['data' => null, 'message' => 'Unauthorized', 'code' => 401];
+        try {
+            $phone = new PhoneNumber($request->phone, 'US'); // change US if your default country is different
+            $normalizedPhone = $phone->formatE164();
+        } catch (NumberParseException $e) {
+            return [
+                'data' => null,
+                'message' => 'Invalid phone number',
+                'code' => 422,
+            ];
         }
 
-        $this->otpService->sendOtp($request->phone);
+        $credentials = [
+            'phone' => $normalizedPhone,
+            'password' => $request->password,
+        ];
 
-        // Return success response with token
-        return ['data' => $this->respondWithToken($token), 'message' => 'Login successful', 'code' => 200];
+        if (! $token = JWTAuth::attempt($credentials)) {
+            return [
+                'data' => null,
+                'message' => 'Unauthorized',
+                'code' => 401,
+            ];
+        }
+
+        $this->otpService->sendOtp($normalizedPhone);
+
+        return [
+            'data' => $this->respondWithToken($token),
+            'message' => 'Login successful',
+            'code' => 200,
+        ];
     }
 
     /**

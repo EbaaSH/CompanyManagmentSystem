@@ -10,6 +10,7 @@ use App\Models\Delivery\DeliveryStatusHistory;
 class DeliveryFail
 {
     private $delivery;
+
     public function __construct(Delivery $delivery)
     {
         $this->delivery = $delivery;
@@ -45,8 +46,8 @@ class DeliveryFail
 
         // Schedule retry
         $retryTime = match ($this->delivery->retry_attempt) {
-            1 => now()->addMinutes(2), 
-            2 => now()->addMinutes(5), 
+            1 => now()->addMinutes(2),
+            2 => now()->addMinutes(5),
             default => now()->addMinutes(10),
         };
 

@@ -8,7 +8,6 @@ use App\Models\Delivery\Delivery;
 use App\Models\Delivery\DeliveryStatusHistory;
 use App\Models\Payment;
 
-
 class DeliveryDeliver
 {
     private $delivery;
@@ -28,6 +27,7 @@ class DeliveryDeliver
             'reason' => $reason ?? '',
         ]);
     }
+
     private function processPayment()
     {
         $payment = $this->delivery->order->payment ?? Payment::where('order_id', $this->delivery->order_id)->first();
@@ -42,6 +42,7 @@ class DeliveryDeliver
             event(new PaymentProcessed($payment));
         }
     }
+
     public function deliver($userId, $proofImageUrl = null, $notes = null)
     {
         $this->delivery->update([
@@ -62,8 +63,8 @@ class DeliveryDeliver
 
         // Fire event
         event(new OrderDelivered($this->delivery->order));
+        $this->delivery->driver->setAvailability('available');
 
         return $this->delivery;
     }
-
 }

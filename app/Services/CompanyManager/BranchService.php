@@ -9,6 +9,7 @@ use App\Models\Company\WeekDay;
 use App\Models\Driver\DriverProfile;
 use App\Models\Employee\EmployeeProfile;
 use App\Models\User;
+use Propaganistas\LaravelPhone\PhoneNumber;
 
 class BranchService
 {
@@ -16,23 +17,31 @@ class BranchService
     {
         $user = auth()->user();
         $company = $user->ownedCompany;
-        if (!$company) {
+        if (! $company) {
             return [
                 'data' => null,
                 'message' => 'Company not found',
                 'code' => 404,
             ];
         }
+        $phone = new PhoneNumber($request->manager_phone);
+
+        $managerNormalized = $phone->formatE164();
         $user = User::create([
             'name' => $request->manager_name,
             'email' => $request->manager_email,
             'password' => $request->password,
-            'phone' => $request->manager_phone,
+            'phone' => $managerNormalized,
         ]);
 
         $user->assignRole('branch-manager');
 
-        $user->update(['phone_verified_at' => now()]);
+        // $user->update(['phone_verified_at' => now()]);
+
+        $phone = new PhoneNumber($request->phone);
+
+        $branchNormalized = $phone->formatE164();
+
         $companyId = $company->id;
         $branch = Branch::create([
             'company_id' => $companyId,
@@ -43,7 +52,7 @@ class BranchService
             'city' => $request->city,
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
-            'phone' => $request->phone,
+            'phone' => $branchNormalized,
             'is_active' => $request->is_active,
         ]);
 
@@ -55,18 +64,18 @@ class BranchService
             foreach ($request->weekly_schedule as $item) {
                 $weekDay = WeekDay::where('day_name', $item['day'])->first();
 
-                if (!$weekDay) {
+                if (! $weekDay) {
                     return [
                         'data' => null,
-                        'message' => 'Invalid week day: ' . $item['day'],
+                        'message' => 'Invalid week day: '.$item['day'],
                         'code' => 400,
                     ];
                 }
 
                 $branchTimeHistory = BranchTimeHistory::create([
                     'branch_id' => $branch->id,
-                    'opening_time' => $item['opening_time'] . ':00',
-                    'closing_time' => $item['closing_time'] . ':00',
+                    'opening_time' => $item['opening_time'].':00',
+                    'closing_time' => $item['closing_time'].':00',
                     // 'operation_date' => $operationDate,
                 ]);
 
@@ -79,14 +88,17 @@ class BranchService
 
         if ($request->has('employees') && is_array($request->employees)) {
             foreach ($request->employees as $employee) {
+                $phone = new PhoneNumber($employee['phone']);
+
+                $empNormalized = $phone->formatE164();
                 $employeeUser = User::create([
                     'name' => $employee['name'],
                     'email' => $employee['email'],
                     'password' => $employee['password'],
-                    'phone' => $employee['phone'],
+                    'phone' => $empNormalized,
                 ]);
 
-                $employeeUser->update(['phone_verified_at' => now()]);
+                // $employeeUser->update(['phone_verified_at' => now()]);
 
                 $employeeUser->assignRole('employee');
 
@@ -103,14 +115,17 @@ class BranchService
         }
         if ($request->has('drivers') && is_array($request->drivers)) {
             foreach ($request->drivers as $driver) {
+                $phone = new PhoneNumber($driver['phone']);
+
+                $driverNormalized = $phone->formatE164();
                 $driverUser = User::create([
                     'name' => $driver['name'],
                     'email' => $driver['email'],
                     'password' => $driver['password'],
-                    'phone' => $driver['phone'],
+                    'phone' => $driverNormalized,
                 ]);
 
-                $driverUser->update(['phone_verified_at' => now()]);
+                // $driverUser->update(['phone_verified_at' => now()]);
 
                 $driverUser->assignRole('driver');
 
@@ -150,7 +165,7 @@ class BranchService
     {
         $user = auth()->user();
         $branch = Branch::query()->forUserViaPermission($user)->find($branchId);
-        if (!$branch) {
+        if (! $branch) {
             return [
                 'data' => null,
                 'message' => 'Branch not found',
@@ -159,14 +174,18 @@ class BranchService
         }
 
         $branchManager = $branch->manager;
+        $phone = new PhoneNumber($request->manager_phone);
 
+        $managerNormalized = $phone->formatE164();
         $branchManager->update([
             'name' => $request->manager_name ?? $branchManager->name,
             'email' => $request->manager_email ?? $branchManager->email,
-            'phone' => $request->manager_phone ?? $branchManager->phone,
+            'phone' => $managerNormalized ?? $branchManager->phone,
             'password' => $request->password ?? $branchManager->password,
         ]);
+        $phone = new PhoneNumber($request->phone);
 
+        $branchNormalized = $phone->formatE164();
         // Update branch data
         $branch->update([
             'name' => $request->name ?? $branch->name,
@@ -175,7 +194,7 @@ class BranchService
             'city' => $request->city ?? $branch->city,
             'latitude' => $request->latitude ?? $branch->latitude,
             'longitude' => $request->longitude ?? $branch->longitude,
-            'phone' => $request->phone ?? $branch->phone,
+            'phone' => $branchNormalized ?? $branch->phone,
             'is_active' => $request->is_active ?? $branch->is_active,
         ]);
 
@@ -199,14 +218,14 @@ class BranchService
             foreach ($request->weekly_schedule as $item) {
                 $weekDay = WeekDay::where('day_name', $item['day'])->first();
 
-                if (!$weekDay) {
+                if (! $weekDay) {
                     continue;
                 }
 
                 $history = BranchTimeHistory::create([
                     'branch_id' => $branch->id,
-                    'opening_time' => $item['opening_time'] . ':00',
-                    'closing_time' => $item['closing_time'] . ':00',
+                    'opening_time' => $item['opening_time'].':00',
+                    'closing_time' => $item['closing_time'].':00',
                     // 'operation_date' => $operationDate,
                 ]);
 
@@ -231,18 +250,20 @@ class BranchService
             foreach ($request->employees as $employee) {
 
                 // UPDATE
-                if (!empty($employee['id'])) {
+                if (! empty($employee['id'])) {
 
                     $employeeUser = User::find($employee['id']);
-                    if (!$employeeUser) {
+                    if (! $employeeUser) {
                         continue;
                     }
+                    $phone = new PhoneNumber($employee['phone']);
 
+                    $empNormalized = $phone->formatE164();
                     $employeeUser->update([
                         'name' => $employee['name'] ?? $employeeUser->name,
                         'email' => $employee['email'] ?? $employeeUser->email,
-                        'password' => !empty($employee['password']) ? bcrypt($employee['password']) : $employeeUser->password,
-                        'phone' => $employee['phone'] ?? $employeeUser->phone,
+                        'password' => ! empty($employee['password']) ? bcrypt($employee['password']) : $employeeUser->password,
+                        'phone' => $empNormalized ?? $employeeUser->phone,
                     ]);
 
                     $employeeUser->employeeProfile()->update([
@@ -257,15 +278,17 @@ class BranchService
 
                 // CREATE
                 else {
+                    $phone = new PhoneNumber($employee['phone']);
 
+                    $empNormalized = $phone->formatE164();
                     $employeeUser = User::create([
                         'name' => $employee['name'],
                         'email' => $employee['email'],
                         'password' => bcrypt($employee['password']),
-                        'phone' => $employee['phone'],
+                        'phone' => $empNormalized,
                     ]);
 
-                    $employeeUser->update(['phone_verified_at' => now()]);
+                    // $employeeUser->update(['phone_verified_at' => now()]);
 
                     $employeeUser->assignRole('employee');
 
@@ -286,7 +309,7 @@ class BranchService
             // OPTIONAL: Deactivate removed employees
             $toDeactivate = array_diff($existingEmployeeIds, $incomingEmployeeIds);
 
-            if (!empty($toDeactivate)) {
+            if (! empty($toDeactivate)) {
                 EmployeeProfile::whereIn('user_id', $toDeactivate)
                     ->update(['is_active' => false]);
             }
@@ -306,18 +329,20 @@ class BranchService
             foreach ($request->drivers as $driver) {
 
                 // UPDATE
-                if (!empty($driver['id'])) {
+                if (! empty($driver['id'])) {
 
                     $driverUser = User::find($driver['id']);
-                    if (!$driverUser) {
+                    if (! $driverUser) {
                         continue;
                     }
+                    $phone = new PhoneNumber($driver['phone']);
 
+                    $empNormalized = $phone->formatE164();
                     $driverUser->update([
                         'name' => $driver['name'] ?? $driverUser->name,
                         'email' => $driver['email'] ?? $driverUser->email,
-                        'password' => !empty($driver['password']) ? bcrypt($driver['password']) : $driverUser->password,
-                        'phone' => $driver['phone'] ?? $driverUser->phone,
+                        'password' => ! empty($driver['password']) ? bcrypt($driver['password']) : $driverUser->password,
+                        'phone' => $empNormalized ?? $driverUser->phone,
                     ]);
 
                     $driverUser->driverProfile()->update([
@@ -334,15 +359,17 @@ class BranchService
 
                 // CREATE
                 else {
+                    $phone = new PhoneNumber($driver['phone']);
 
+                    $empNormalized = $phone->formatE164();
                     $driverUser = User::create([
                         'name' => $driver['name'],
                         'email' => $driver['email'],
                         'password' => bcrypt($driver['password']),
-                        'phone' => $driver['phone'],
+                        'phone' => $empNormalized,
                     ]);
 
-                    $driverUser->update(['phone_verified_at' => now()]);
+                    // $driverUser->update(['phone_verified_at' => now()]);
 
                     $driverUser->assignRole('driver');
 
@@ -365,7 +392,7 @@ class BranchService
             // OPTIONAL: Deactivate removed drivers
             $toDeactivate = array_diff($existingDriverIds, $incomingDriverIds);
 
-            if (!empty($toDeactivate)) {
+            if (! empty($toDeactivate)) {
                 DriverProfile::whereIn('user_id', $toDeactivate)
                     ->update(['is_active' => false]);
             }
@@ -388,11 +415,12 @@ class BranchService
             'code' => 200,
         ];
     }
+
     public function deleteBranch($branchId)
     {
         $user = auth()->user();
         $branch = Branch::query()->forUserViaPermission($user)->find($branchId);
-        if (!$branch) {
+        if (! $branch) {
             return [
                 'data' => null,
                 'message' => 'Branch not found',
@@ -400,17 +428,19 @@ class BranchService
             ];
         }
         $branch->delete();
+
         return [
             'data' => null,
             'message' => 'Branch deleted successfully',
             'code' => 200,
         ];
     }
+
     public function restoreBranch($branchId)
     {
         $user = auth()->user();
         $branch = Branch::query()->forUserViaPermission($user)->onlyTrashed()->find($branchId);
-        if (!$branch) {
+        if (! $branch) {
             return [
                 'data' => null,
                 'message' => 'Branch not found',
@@ -418,6 +448,7 @@ class BranchService
             ];
         }
         $branch->restore();
+
         return [
             'data' => null,
             'message' => 'Branch restored successfully',

@@ -40,7 +40,7 @@ class ConfirmOrder
         $userId = auth()->user()->id;
         $stateMachine = $this->stateMachine();
 
-        if (!$stateMachine->canTransition('confirmed', 'system')) {
+        if (! $stateMachine->canTransition('confirmed', 'system')) {
             throw new \Exception('Order cannot be auto-confirmed');
         }
 
@@ -60,7 +60,7 @@ class ConfirmOrder
     {
         $stateMachine = $this->stateMachine();
 
-        if (!$stateMachine->canTransition('confirmed', 'employee')) {
+        if (! $stateMachine->canTransition('confirmed', 'employee')) {
             throw new \Exception('Order cannot be confirmed in current status');
         }
 

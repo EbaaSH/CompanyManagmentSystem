@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Auth\OTPService;
 use Illuminate\Support\Facades\Hash;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Propaganistas\LaravelPhone\PhoneNumber;
 
 class CustomerService
 {
@@ -20,10 +21,13 @@ class CustomerService
 
     public function customerRegister($request)
     {
+        $phone = new PhoneNumber($request->phone);
+
+        $normalized = $phone->formatE164();
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'phone' => $request->phone,
+            'phone' => $normalized,
             'password' => Hash::make($request->password),
         ]);
 
@@ -73,7 +77,7 @@ class CustomerService
             ->with('user', 'addresses')
             ->find($id);
 
-        if (!$customer) {
+        if (! $customer) {
             return [
                 'data' => null,
                 'message' => 'customer not found',
@@ -114,6 +118,4 @@ class CustomerService
             'code' => 200,
         ];
     }
-
-
 }

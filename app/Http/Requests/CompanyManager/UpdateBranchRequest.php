@@ -3,6 +3,9 @@
 namespace App\Http\Requests\CompanyManager;
 
 use App\Http\Responses\Response;
+use App\Models\Company\Company;
+use App\Models\Driver\DriverProfile;
+use App\Models\Employee\EmployeeProfile;
 use App\Models\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -21,30 +24,31 @@ class UpdateBranchRequest extends FormRequest
 
             // Branch Manager
             'manager_name' => 'nullable|string|max:150',
-            'manager_email' => 'nullable|email|unique:users,email,' . optional($this->branch?->user)->id,
+            'manager_email' => 'nullable|email|unique:users,email,'.optional($this->branch?->user)->id,
             'manager_phone' => [
                 'nullable',
                 'string',
+                'phone:ALL',
                 'max:30',
                 function ($attribute, $value, $fail) {
                     $existsInUsers = User::where('phone', $value)->exists();
-                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+                    $existsInCompanies = Company::where('phone', $value)->exists();
 
                     if ($existsInUsers || $existsInCompanies) {
                         $fail('This phone number is already in use.');
                     }
-                }
+                },
             ],
             'password' => 'nullable|string|min:8',
 
             // Branch Info
             'name' => 'nullable|string|max:150',
-            'code' => 'nullable|string|max:50|unique:branches,code,' . $this->route('branchId'),
+            'code' => 'nullable|string|max:50|unique:branches,code,'.$this->route('branchId'),
             'address' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:100',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'phone' => 'nullable|string|max:30',
+            'phone' => 'nullable|string|max:30|phone:ALL',
             'is_active' => 'nullable|boolean',
 
             // Weekly Schedule
@@ -61,14 +65,14 @@ class UpdateBranchRequest extends FormRequest
 
                     $branchId = $this->route('branchId');
 
-                    $exists = \App\Models\Employee\EmployeeProfile::where('user_id', $value)
+                    $exists = EmployeeProfile::where('user_id', $value)
                         ->where('branch_id', $branchId)
                         ->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         $fail('This employee does not belong to this branch.');
                     }
-                }
+                },
             ],
 
             'employees.*.name' => 'required_with:employees|string|max:150',
@@ -78,7 +82,7 @@ class UpdateBranchRequest extends FormRequest
                 function ($attribute, $value, $fail) {
                     $id = request()->input(str_replace('email', 'id', $attribute));
                     $exists = User::where('email', $value)
-                        ->when($id, fn($q) => $q->where('id', '!=', $id))
+                        ->when($id, fn ($q) => $q->where('id', '!=', $id))
                         ->exists();
 
                     if ($exists) {
@@ -90,15 +94,16 @@ class UpdateBranchRequest extends FormRequest
             'employees.*.phone' => [
                 'nullable',
                 'string',
+                'phone:ALL',
                 'max:30',
                 function ($attribute, $value, $fail) {
                     $existsInUsers = User::where('phone', $value)->exists();
-                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+                    $existsInCompanies = Company::where('phone', $value)->exists();
 
                     if ($existsInUsers || $existsInCompanies) {
                         $fail('This phone number is already in use.');
                     }
-                }
+                },
             ],
             'employees.*.job_title_id' => 'nullable|exists:job_titles,id',
             'employees.*.shift_id' => 'nullable|exists:shifts,id',
@@ -113,14 +118,14 @@ class UpdateBranchRequest extends FormRequest
 
                     $branchId = $this->route('branchId');
 
-                    $exists = \App\Models\Driver\DriverProfile::where('user_id', $value)
+                    $exists = DriverProfile::where('user_id', $value)
                         ->where('branch_id', $branchId)
                         ->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         $fail('This driver does not belong to this branch.');
                     }
-                }
+                },
             ],
             'drivers.*.name' => 'required_with:drivers|string|max:150',
             'drivers.*.email' => [
@@ -129,7 +134,7 @@ class UpdateBranchRequest extends FormRequest
                 function ($attribute, $value, $fail) {
                     $id = request()->input(str_replace('email', 'id', $attribute));
                     $exists = User::where('email', $value)
-                        ->when($id, fn($q) => $q->where('id', '!=', $id))
+                        ->when($id, fn ($q) => $q->where('id', '!=', $id))
                         ->exists();
 
                     if ($exists) {
@@ -141,15 +146,16 @@ class UpdateBranchRequest extends FormRequest
             'drivers.*.phone' => [
                 'nullable',
                 'string',
+                'phone:ALL',
                 'max:30',
                 function ($attribute, $value, $fail) {
                     $existsInUsers = User::where('phone', $value)->exists();
-                    $existsInCompanies = \App\Models\Company\Company::where('phone', $value)->exists();
+                    $existsInCompanies = Company::where('phone', $value)->exists();
 
                     if ($existsInUsers || $existsInCompanies) {
                         $fail('This phone number is already in use.');
                     }
-                }
+                },
             ],
             'drivers.*.vehicle_type' => 'nullable|string|max:100',
             'drivers.*.plate_number' => 'nullable|string|max:50',

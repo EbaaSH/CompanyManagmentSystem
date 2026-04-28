@@ -21,13 +21,11 @@ class AssignDriverJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(private Order $order)
-    {
-    }
+    public function __construct(private Order $order) {}
 
-    public $tries = 20; 
+    public $tries = 20;
 
-    public $timeout = 300; 
+    public $timeout = 300;
 
     public $backoff = [30, 30, 30, 30, 30];
 
@@ -136,42 +134,6 @@ class AssignDriverJob implements ShouldQueue
             throw $e;
         }
     }
-
-    /**
-     * Notify driver of assignment
-     */
-    // private function notifyDriver(DriverProfile $driver)
-    // {
-    //     Notification::create([
-    //         'user_id' => $driver->user_id,
-    //         'type' => 'delivery.assigned',
-    //         'title' => 'New Delivery: '.$this->order->order_number,
-    //         'message' => "Pick up your items from {$this->order->branch->name}",
-    //     ]);
-
-    //     // Send push notification with delivery details
-    //     // $driver->user->notifyNewDelivery($this->order);
-    // }
-
-    /**
-     * Notify customer driver assigned
-     */
-    // private function notifyCustomer()
-    // {
-    //     $driver = $this->order->delivery->driver;
-    //     $estimatedPickupTime = 15; // minutes
-    //     $estimatedDeliveryTime = 30; // minutes
-
-    //     Notification::create([
-    //         'user_id' => $this->order->customer->user_id,
-    //         'type' => 'delivery.assigned',
-    //         'title' => 'Driver assigned!',
-    //         'message' => "Driver {$driver->user->name} will deliver your order in ~{$estimatedDeliveryTime} minutes",
-    //     ]);
-
-    //     // Send tracking link
-    //     // $this->order->customer->user->sendTrackingLink($this->order);
-    // }
 
     /**
      * Notify admin when no driver available after timeout
