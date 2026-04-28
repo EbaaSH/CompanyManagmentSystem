@@ -18,7 +18,8 @@ class OrderQueryService
                 'orderStatus',
                 'statusHistories',
                 'orderItems.menuItem',
-                'orderItems.orderItemOptions'
+                'orderItems.orderItemOptions',
+                'payment'
             )
             ->find($orderId);
         if (! $order) {
@@ -48,7 +49,8 @@ class OrderQueryService
                 'orderStatus',
                 'statusHistories',
                 'orderItems.menuItem',
-                'orderItems.orderItemOptions'
+                'orderItems.orderItemOptions',
+                'payment'
             )
             ->paginate(10);
 
