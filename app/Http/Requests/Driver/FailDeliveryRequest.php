@@ -2,7 +2,13 @@
 
 namespace App\Http\Requests\Driver;
 
+use App\Http\Responses\Response;
+use App\Models\Menu\MenuItem;
+use App\Models\Order\Order;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\ValidationException;
+
 
 class FailDeliveryRequest extends FormRequest
 {
@@ -22,5 +28,12 @@ class FailDeliveryRequest extends FormRequest
         return [
             'reason' => 'required|string|max:500',
         ];
+    }
+    protected function failedValidation(Validator $validator)
+    {
+        throw new ValidationException(
+            $validator,
+            Response::Validation([], $validator->errors())
+        );
     }
 }

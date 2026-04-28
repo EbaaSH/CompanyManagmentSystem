@@ -42,7 +42,7 @@ class AssignDriverJob implements ShouldQueue
         }
 
         // If delivery already assigned, skip
-        if ($this->order->delivery->delivery_status !== 'unassigned') {
+        if ($this->order->delivery->delivery_status !== 'unassigned' && $this->order->delivery->delivery_status !== 'rejected') {
             return;
         }
 
@@ -107,7 +107,7 @@ class AssignDriverJob implements ShouldQueue
 
             // Record status history
             $this->order->delivery->recordStatusHistory(
-                'unassigned',
+                $this->order->delivery->delivery_status,
                 'assigned',
                 1, // system user
                 "Auto-assigned driver {$driver->user->name}"

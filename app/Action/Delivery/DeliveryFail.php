@@ -35,7 +35,7 @@ class DeliveryFail
         if ($this->delivery->retry_attempt >= 3) {
             $this->delivery->update(['delivery_status' => 'failed']);
             $this->delivery->order->update(['status' => 'failed_delivery']);
-            $this->delivery->order->recordStatusHistory('picked_up', 'failed_delivery', $userId, "Delivery failed after {$this->retry_attempt} attempts. Reason: {$reason}");
+            $this->delivery->order->recordStatusHistory('picked_up', 'failed_delivery', $userId, "Delivery failed after {$this->delivery->retry_attempt} attempts. Reason: {$reason}");
 
             // Notify customer of options (refund, reschedule, pickup)
             event(new DeliveryFailed($this->delivery, $reason));
@@ -44,10 +44,10 @@ class DeliveryFail
         }
 
         // Schedule retry
-        $retryTime = match ($this->deliveery->retry_attempt) {
-            1 => now()->addHours(1), // Retry in 2 hours
-            2 => now()->addHours(2), // Retry next day
-            default => now()->addHours(4),
+        $retryTime = match ($this->delivery->retry_attempt) {
+            1 => now()->addMinutes(2), 
+            2 => now()->addMinutes(5), 
+            default => now()->addMinutes(10),
         };
 
         $this->delivery->update([
