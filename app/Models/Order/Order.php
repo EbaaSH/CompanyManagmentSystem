@@ -134,26 +134,26 @@ class Order extends Model
     /**
      * Get state machine for this order
      */
-    public function stateMachine(): OrderStateMachine
-    {
-        return new OrderStateMachine($this);
-    }
+    // public function stateMachine(): OrderStateMachine
+    // {
+    //     return new OrderStateMachine($this);
+    // }
 
-    /**
-     * Check if can transition to state
-     */
-    public function canTransitionTo($newStatus): bool
-    {
-        return $this->stateMachine()->canTransition($newStatus, auth()->user()?->getRoleNames()->first() ?? 'system');
-    }
+    // /**
+    //  * Check if can transition to state
+    //  */
+    // public function canTransitionTo($newStatus): bool
+    // {
+    //     return $this->stateMachine()->canTransition($newStatus, auth()->user()?->getRoleNames()->first() ?? 'system');
+    // }
 
-    /**
-     * Get all possible next states
-     */
-    public function getNextStates(): array
-    {
-        return $this->stateMachine()->getNextStates();
-    }
+    // /**
+    //  * Get all possible next states
+    //  */
+    // public function getNextStates(): array
+    // {
+    //     return $this->stateMachine()->getNextStates();
+    // }
 
     // ===== WORKFLOW METHODS (OPTIMIZED) =====
 
@@ -184,21 +184,21 @@ class Order extends Model
      * EMPLOYEE CONFIRMS ORDER (Manual)
      * Used if auto-confirmation fails
      */
-    public function confirm($userId)
-    {
-        $stateMachine = $this->stateMachine();
+    // public function confirm($userId)
+    // {
+    //     $stateMachine = $this->stateMachine();
 
-        if (! $stateMachine->canTransition('confirmed', 'employee')) {
-            throw new \Exception('Order cannot be confirmed in current status');
-        }
+    //     if (! $stateMachine->canTransition('confirmed', 'employee')) {
+    //         throw new \Exception('Order cannot be confirmed in current status');
+    //     }
 
-        $this->update(['status' => 'confirmed']);
-        $this->recordStatusHistory('pending', 'confirmed', $userId, 'Manually confirmed by employee');
+    //     $this->update(['status' => 'confirmed']);
+    //     $this->recordStatusHistory('pending', 'confirmed', $userId, 'Manually confirmed by employee');
 
-        event(new OrderConfirmed($this));
+    //     event(new OrderConfirmed($this));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * EMPLOYEE MARKS PREPARING
@@ -256,69 +256,69 @@ class Order extends Model
      * DRIVER PICKS UP ORDER
      * Called when driver physically picks up order from branch
      */
-    public function pickUp($userId)
-    {
-        if (! $this->delivery || $this->delivery->delivery_status !== 'accepted') {
-            throw new \Exception('Delivery must be accepted before pickup');
-        }
+    // public function pickUp($userId)
+    // {
+    //     if (! $this->delivery || $this->delivery->delivery_status !== 'accepted') {
+    //         throw new \Exception('Delivery must be accepted before pickup');
+    //     }
 
-        $this->update(['status' => 'picked_up']);
-        $this->recordStatusHistory('ready_for_pickup', 'picked_up', $userId);
+    //     $this->update(['status' => 'picked_up']);
+    //     $this->recordStatusHistory('ready_for_pickup', 'picked_up', $userId);
 
-        $this->delivery->update([
-            'delivery_status' => 'picked_up',
-            'picked_up_at' => now(),
-        ]);
+    //     $this->delivery->update([
+    //         'delivery_status' => 'picked_up',
+    //         'picked_up_at' => now(),
+    //     ]);
 
-        event(new OrderPickedUp($this));
+    //     event(new OrderPickedUp($this));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * DRIVER DELIVERS ORDER
      * Called when order delivered to customer
      */
-    public function deliver($userId, $proofImageUrl = null, $notes = null)
-    {
-        if (! $this->delivery || $this->delivery->delivery_status !== 'picked_up') {
-            throw new \Exception('Order must be picked up before delivery');
-        }
+    // public function deliver($userId, $proofImageUrl = null, $notes = null)
+    // {
+    //     if (! $this->delivery || $this->delivery->delivery_status !== 'picked_up') {
+    //         throw new \Exception('Order must be picked up before delivery');
+    //     }
 
-        $this->update(['status' => 'delivered']);
-        $this->recordStatusHistory('picked_up', 'delivered', $userId);
+    //     $this->update(['status' => 'delivered']);
+    //     $this->recordStatusHistory('picked_up', 'delivered', $userId);
 
-        $this->delivery->update([
-            'delivery_status' => 'delivered',
-            'delivered_at' => now(),
-            'proof_image_url' => $proofImageUrl,
-            'delivery_notes' => $notes,
-        ]);
+    //     $this->delivery->update([
+    //         'delivery_status' => 'delivered',
+    //         'delivered_at' => now(),
+    //         'proof_image_url' => $proofImageUrl,
+    //         'delivery_notes' => $notes,
+    //     ]);
 
-        event(new OrderDelivered($this));
+    //     event(new OrderDelivered($this));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * DELIVERY FAILED
      * Called when delivery attempt fails (customer not home, etc.)
      */
-    public function failDelivery($userId, $reason = null)
-    {
-        if (! $this->delivery) {
-            throw new \Exception('Delivery not found');
-        }
+    // public function failDelivery($userId, $reason = null)
+    // {
+    //     if (! $this->delivery) {
+    //         throw new \Exception('Delivery not found');
+    //     }
 
-        $this->update(['status' => 'failed_delivery']);
-        $this->recordStatusHistory($this->status, 'failed_delivery', $userId, $reason);
+    //     $this->update(['status' => 'failed_delivery']);
+    //     $this->recordStatusHistory($this->status, 'failed_delivery', $userId, $reason);
 
-        $this->delivery->update(['delivery_status' => 'failed']);
+    //     $this->delivery->update(['delivery_status' => 'failed']);
 
-        event(new DeliveryFailed($this->delivery, $reason));
+    //     event(new DeliveryFailed($this->delivery, $reason));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * CANCEL ORDER
@@ -375,71 +375,8 @@ class Order extends Model
         ]);
     }
 
-    /**
-     * Get total preparation time
-     */
-    public function getTotalPrepTimeAttribute(): int
-    {
-        return $this->items->sum(fn ($item) => $item->menuItem->preparation_time_minutes ?? 0);
-    }
+    
+    
 
-    /**
-     * Get remaining prep time based on status
-     */
-    public function getRemainingPrepTime(): ?int
-    {
-        if (! in_array($this->status, ['confirmed', 'preparing'])) {
-            return null;
-        }
-
-        $createdAt = $this->created_at;
-        $estimatedReady = $createdAt->addMinutes($this->getTotalPrepTime);
-        $remaining = $estimatedReady->diffInMinutes(now());
-
-        return max(0, $remaining);
-    }
-
-    /**
-     * Get customer satisfaction score (based on delivery time, etc.)
-     */
-    public function getCustomerSatisfactionScore(): ?float
-    {
-        if ($this->status !== 'delivered') {
-            return null;
-        }
-
-        $deliveryTime = $this->delivery->delivered_at->diffInMinutes($this->created_at);
-        $estimatedTime = $this->getTotalPrepTime + 30; // 30 min delivery
-
-        // Score based on time efficiency
-        if ($deliveryTime <= $estimatedTime) {
-            return 95;
-        } elseif ($deliveryTime <= $estimatedTime + 15) {
-            return 85;
-        } else {
-            return 70;
-        }
-    }
-
-    /**
-     * Check if order needs emergency attention
-     */
-    public function needsAttention(): bool
-    {
-        // Order stuck for more than 30 minutes
-        if (in_array($this->status, ['ready_for_pickup', 'picked_up'])) {
-            return $this->updated_at->diffInMinutes(now()) > 30;
-        }
-
-        // Order waiting for driver for more than 10 minutes
-        if ($this->status === 'ready_for_pickup' && ! $this->driver) {
-            return $this->statusHistories()
-                ->where('new_status', 'ready_for_pickup')
-                ->first()
-                ->created_at
-                ->diffInMinutes(now()) > 10;
-        }
-
-        return false;
-    }
+    
 }

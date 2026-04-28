@@ -155,48 +155,48 @@ class Delivery extends Model
      * DRIVER ACCEPTS DELIVERY
      * Called when driver accepts the delivery assignment
      */
-    public function accept($userId)
-    {
-        if ($this->delivery_status !== 'assigned') {
-            throw new \Exception('Delivery must be assigned before accepting');
-        }
+    // public function accept($userId)
+    // {
+    //     if ($this->delivery_status !== 'assigned') {
+    //         throw new \Exception('Delivery must be assigned before accepting');
+    //     }
 
-        $this->update([
-            'delivery_status' => 'accepted',
-            'accepted_at' => now(),
-        ]);
+    //     $this->update([
+    //         'delivery_status' => 'accepted',
+    //         'accepted_at' => now(),
+    //     ]);
 
-        $this->recordStatusHistory('assigned', 'accepted', $userId);
+    //     $this->recordStatusHistory('assigned', 'accepted', $userId);
 
-        // Fire event
-        event(new DeliveryAccepted($this));
+    //     // Fire event
+    //     event(new DeliveryAccepted($this));
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * DRIVER REJECTS DELIVERY
      * Called when driver rejects the delivery
      * Triggers auto-reassignment
      */
-    public function reject($userId, $reason = null)
-    {
-        if ($this->delivery_status !== 'assigned') {
-            throw new \Exception('Can only reject assigned deliveries');
-        }
+    // public function reject($userId, $reason = null)
+    // {
+    //     if ($this->delivery_status !== 'assigned') {
+    //         throw new \Exception('Can only reject assigned deliveries');
+    //     }
 
-        $this->update([
-            'delivery_status' => 'rejected',
-            'driver_id' => null, // Clear driver
-        ]);
+    //     $this->update([
+    //         'delivery_status' => 'rejected',
+    //         'driver_id' => null, // Clear driver
+    //     ]);
 
-        $this->recordStatusHistory('assigned', 'rejected', $userId, $reason);
+    //     $this->recordStatusHistory('assigned', 'rejected', $userId, $reason);
 
-        // Immediately trigger re-assignment
-        AssignDriverJob::dispatch($this->order);
+    //     // Immediately trigger re-assignment
+    //     AssignDriverJob::dispatch($this->order);
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     /**
      * DRIVER PICKS UP ORDER

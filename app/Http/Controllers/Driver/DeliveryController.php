@@ -11,7 +11,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Driver\AcceptDeliveryRequest;
 use App\Http\Requests\Driver\DeliverOrderRequest;
 use App\Http\Requests\Driver\FailDeliveryRequest;
-use App\Http\Requests\Driver\PickupOrderRequest;
 use App\Http\Requests\Driver\RejectDeliveryRequest;
 use App\Http\Responses\Response;
 use App\Models\Delivery\Delivery;

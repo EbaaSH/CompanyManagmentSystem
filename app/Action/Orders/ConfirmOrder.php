@@ -40,7 +40,7 @@ class ConfirmOrder
         $userId = auth()->user()->id;
         $stateMachine = $this->stateMachine();
 
-        if (! $stateMachine->canTransition('confirmed', 'system')) {
+        if (!$stateMachine->canTransition('confirmed', 'system')) {
             throw new \Exception('Order cannot be auto-confirmed');
         }
 
@@ -53,6 +53,22 @@ class ConfirmOrder
         // Fire event
         event(new OrderConfirmed($this->order));
 
-        return $this;
+        return $this->order;
+    }
+
+    public function confirm($userId)
+    {
+        $stateMachine = $this->stateMachine();
+
+        if (!$stateMachine->canTransition('confirmed', 'employee')) {
+            throw new \Exception('Order cannot be confirmed in current status');
+        }
+
+        $this->order->update(['status' => 'confirmed']);
+        $this->recordStatusHistory('pending', 'confirmed', $userId, 'Manually confirmed by employee');
+
+        event(new OrderConfirmed($this->order));
+
+        return $this->order;
     }
 }

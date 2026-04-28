@@ -25,23 +25,21 @@ class AssignDriverJob implements ShouldQueue
     {
     }
 
-    public $tries = 20; // Max 20 retry attempts
+    public $tries = 20; 
 
-    public $timeout = 300; // 5 minutes per attempt
+    public $timeout = 300; 
 
-    public $backoff = [30, 30, 30, 30, 30]; // 30 seconds between retries
+    public $backoff = [30, 30, 30, 30, 30];
 
     /**
      * Execute job: Find and assign driver
      */
     public function handle()
     {
-        // If order no longer ready, skip
         if ($this->order->status !== 'ready_for_pickup') {
             return;
         }
 
-        // If delivery already assigned, skip
         if ($this->order->delivery->delivery_status !== 'unassigned' && $this->order->delivery->delivery_status !== 'rejected') {
             return;
         }
