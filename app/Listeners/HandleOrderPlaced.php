@@ -23,21 +23,8 @@ class HandleOrderPlaced
     {
         $order = $event->order;
 
-        // Auto-confirm if all validations pass
-        try {
-            $order->autoConfirm();
-            event(new OrderConfirmed($order));
-        } catch (\Exception $e) {
-            // Manual confirmation needed
-            $this->notifyAdminForManualConfirmation($order);
-        }
-    }
-
-    private function notifyAdminForManualConfirmation($order)
-    {
-        // Send notification to branch manager
         Notification::create([
-            'user_id' => $order->branch->manager->user_id,
+            'user_id' => $order->branch->manager->id,
             'type' => 'order.needs_confirmation',
             'title' => 'Order needs manual confirmation',
             'message' => "Order #{$order->order_number} needs manual review",

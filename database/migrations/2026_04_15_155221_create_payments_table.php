@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -18,7 +17,15 @@ return new class extends Migration
             $table->enum('payment_status', ['pending', 'paid', 'failed', 'refunded'])->default('pending');
             $table->string('transaction_reference');
             $table->decimal('amount', 12, 2);
+            $table->string('gateway')->nullable();
+            // stripe, paypal, cash
+            $table->string('payment_intent_id')->nullable();
+            $table->string('gateway_payment_id')->nullable();
+            $table->string('gateway_client_secret')->nullable();
             $table->dateTime('paid_at')->nullable();
+            $table->decimal('refunded_amount', 12, 2)->default(0);
+            $table->timestamp('refunded_at')->nullable();
+            $table->string('currency', 10)->default('USD');
             $table->timestamps();
 
             $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');

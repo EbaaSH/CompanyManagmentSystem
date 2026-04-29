@@ -34,8 +34,8 @@ class OrderPolicy
     public function delete(User $user, Order $order): bool
     {
         return
-        $user->can('orders.delete') &&
-        Order::forUserViaPermission($user)->where('id', $order->id)->exists();
+            $user->can('orders.delete') &&
+            Order::forUserViaPermission($user)->where('id', $order->id)->exists();
     }
 
     public function viewAny(User $user): bool
@@ -64,6 +64,10 @@ class OrderPolicy
         return $user->can('orders.write');
     }
 
+    public function confirm(User $user, Order $order)
+    {
+        return $user->can('orders.confirm');
+    }
     public function cancel(User $user, Order $order)
     {
         return $user->can('orders.cancel');

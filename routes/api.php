@@ -9,6 +9,8 @@ use App\Http\Controllers\Customer\CustomerController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use App\Http\Controllers\Driver\DeliveryController;
 use App\Http\Controllers\Employee\OrderController as EmployeeOrderController;
+use App\Http\Controllers\PaymentStripe\PaymentController;
+use App\Http\Controllers\PaymentStripe\StripeWebhookController;
 use App\Http\Controllers\PlatformQuery\BranchQueryController;
 use App\Http\Controllers\PlatformQuery\CompanyQueryController;
 use App\Http\Controllers\PlatformQuery\CustomerQueryController;
@@ -16,6 +18,7 @@ use App\Http\Controllers\PlatformQuery\DeliveryQueryController;
 use App\Http\Controllers\PlatformQuery\DriverQueryController;
 use App\Http\Controllers\PlatformQuery\EmployeeQueryController;
 use App\Http\Controllers\PlatformQuery\MenuQueryController;
+use App\Http\Controllers\PlatformQuery\NotificationQueryController;
 use App\Http\Controllers\PlatformQuery\OrderQueryController;
 use App\Http\Controllers\SuperAdmin\CompanyController;
 use App\Http\Middleware\TwoFactorMiddleware;
@@ -144,6 +147,8 @@ Route::middleware(['auth:api', TwoFactorMiddleware::class])->group(function () {
 // ===== EMPLOYEE ORDER MANAGEMENT ROUTES =====
 Route::middleware(['auth:api', TwoFactorMiddleware::class])->group(function () {
     Route::prefix('employee/orders')->group(function () {
+        Route::patch('/{id}/confirm', [EmployeeOrderController::class, 'confirm']);
+
         Route::patch('/{id}/mark-preparing', [EmployeeOrderController::class, 'markPreparing']);
         // Mark as ready for pickup
         Route::patch('/{id}/mark-ready', [EmployeeOrderController::class, 'markReady']);
@@ -184,3 +189,22 @@ Route::middleware(['auth:api', TwoFactorMiddleware::class])
             Route::get('/{id}', [DeliveryQueryController::class, 'show']);
         });
     });
+
+Route::middleware(['auth:api', TwoFactorMiddleware::class])
+    ->group(function () {
+        Route::prefix('payments/stripe')->group(function () {
+            Route::get('/create/{id}', [PaymentController::class, 'create'])->middleware('permission:customers.payment');
+            Route::get('/webhook', [StripeWebhookController::class, 'handle']);
+        });
+    });
+
+
+Route::middleware(['auth:api', TwoFactorMiddleware::class])
+    ->group(function () {
+        Route::prefix('notification')->group(function () {
+            Route::get('/', [NotificationQueryController::class, 'index']);
+            Route::get('/{id}', [NotificationQueryController::class, 'show']);
+        });
+    });
+
+

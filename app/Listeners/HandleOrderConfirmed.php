@@ -24,7 +24,7 @@ class HandleOrderConfirmed
 
         // Send to kitchen via push notification
         $kitchenStaff = $order->branch->employees()
-            ->whereHas('user', fn ($q) => $q->whereHas('roles', fn ($q) => $q->whereIn('name', ['employee', 'branch_manager'])))
+            ->whereHas('user', fn($q) => $q->whereHas('roles', fn($q) => $q->whereIn('name', ['employee', 'branch_manager'])))
             ->get();
 
         foreach ($kitchenStaff as $staff) {
@@ -32,14 +32,9 @@ class HandleOrderConfirmed
                 'user_id' => $staff->user_id,
                 'type' => 'order.confirmed',
                 'title' => "New Order #{$order->order_number}",
-                'message' => 'Items: '.$order->orderItems->pluck('item_name_snapshot')->join(', '),
+                'message' => 'Items: ' . $order->orderItems->pluck('item_name_snapshot')->join(', '),
             ]);
-
-            // Send push notification
-            // $staff->user->sendPushNotification(...);
         }
 
-        // Log to kitchen display system
-        // broadcast(new OrderToKitchenDisplay($order));
     }
 }

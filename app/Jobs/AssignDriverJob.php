@@ -21,7 +21,9 @@ class AssignDriverJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(private Order $order) {}
+    public function __construct(private Order $order)
+    {
+    }
 
     public $tries = 20;
 
@@ -29,9 +31,6 @@ class AssignDriverJob implements ShouldQueue
 
     public $backoff = [30, 30, 30, 30, 30];
 
-    /**
-     * Execute job: Find and assign driver
-     */
     public function handle()
     {
         if ($this->order->status !== 'ready_for_pickup') {
@@ -42,20 +41,16 @@ class AssignDriverJob implements ShouldQueue
             return;
         }
 
-        // Find best available driver
+
         $driver = $this->findBestDriver();
 
         if ($driver) {
             $this->order->update(['driver_id' => $driver->id]);
             $this->assignDriver($driver);
         } else {
-            // No driver available - will retry via Illuminate queue
             if ($this->attempts() >= $this->tries) {
-                // Max retries exceeded - notify admin
                 $this->notifyAdminNoDriverAvailable();
             }
-
-            // Throw exception to trigger retry
             throw new \Exception("No available drivers for order #{$this->order->order_number}");
         }
     }
@@ -74,42 +69,31 @@ class AssignDriverJob implements ShouldQueue
             ->first();
     }
 
-    /**
-     * Assign driver to delivery
-     */
     private function assignDriver(DriverProfile $driver)
     {
         try {
             DB::beginTransaction();
 
-            // Assign driver to delivery
             $this->order->delivery->update([
                 'driver_id' => $driver->id,
                 'delivery_status' => 'assigned',
                 'assigned_at' => now(),
             ]);
 
-            // Set driver to busy
             $driver->setAvailability('busy');
 
-            // Record status history
+
             $this->order->delivery->recordStatusHistory(
                 $this->order->delivery->delivery_status,
                 'assigned',
-                1, // system user
+                1,
                 "Auto-assigned driver {$driver->user->name}"
             );
 
             DB::commit();
 
-            // Fire event
+
             event(new DriverAssigned($this->order->delivery));
-
-            // Notify driver
-            // $this->notifyDriver($driver);
-
-            // Notify customer
-            // $this->notifyCustomer();
 
             \Log::info('Driver assigned', [
                 'order_id' => $this->order->id,
@@ -125,32 +109,23 @@ class AssignDriverJob implements ShouldQueue
             throw $e;
         }
     }
-
-    /**
-     * Notify admin when no driver available after timeout
-     */
     private function notifyAdminNoDriverAvailable()
     {
-        $superAdmins = User::role('super_admin')->get();
+        $branchManager = $this->order->branch->manager;
 
-        foreach ($superAdmins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'type' => 'alert.no_drivers',
-                'title' => "No drivers available for order #{$this->order->order_number}",
-                'message' => 'Order has been waiting 10 minutes. Manual intervention needed.',
-            ]);
-        }
 
+        Notification::create([
+            'user_id' => $branchManager->id,
+            'type' => 'alert.no_drivers',
+            'title' => "No drivers available for order #{$this->order->order_number}",
+            'message' => 'Order has been waiting 10 minutes. Manual intervention needed.',
+        ]);
         \Log::warning('No drivers available after timeout', [
             'order_id' => $this->order->id,
             'branch_id' => $this->order->branch_id,
         ]);
     }
 
-    /**
-     * Handle job failure
-     */
     public function failed(\Throwable $exception)
     {
         \Log::error('AssignDriverJob failed permanently', [
@@ -158,7 +133,6 @@ class AssignDriverJob implements ShouldQueue
             'error' => $exception->getMessage(),
         ]);
 
-        // Notify admin of permanent failure
         $this->notifyAdminNoDriverAvailable();
     }
 }

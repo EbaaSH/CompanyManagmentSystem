@@ -74,6 +74,7 @@ class RolePermissionSeeder extends Seeder
             'customers.scope.company',
             'customers.scope.branch',
             'customers.scope.own',
+            'customers.payment',
 
             // Orders
             'orders.scope.all',
@@ -83,6 +84,7 @@ class RolePermissionSeeder extends Seeder
             'orders.scope.own',
             'orders.write',
             'orders.delete',
+            'orders.confirm',
             'orders.cancel',
             'orders.markPreparing',
             'orders.markReady',
@@ -108,6 +110,12 @@ class RolePermissionSeeder extends Seeder
             'menus.write',
             'menus.update',
             'menus.delete',
+
+            'notification.scope.all',
+            'notification.scope.company',
+            'notification.scope.branch',
+            'notifications.scope.assigned',
+            'notification.scope.own',
         ];
 
         foreach ($permissions as $permission) {
@@ -137,6 +145,8 @@ class RolePermissionSeeder extends Seeder
                 // no deliveries.write
                 'menus.scope.all',
                 // no menus.write
+
+                'notification.scope.all',
             ]);
 
         // ── company-manager ──────────────────────────────────────────
@@ -173,6 +183,8 @@ class RolePermissionSeeder extends Seeder
                 // 'menus.write',
                 'menus.update',
                 'menus.delete',
+
+                'notification.scope.company',
             ]);
 
         // ── branch-manager ───────────────────────────────────────────
@@ -190,6 +202,7 @@ class RolePermissionSeeder extends Seeder
 
                 'orders.scope.branch',
                 'orders.write',
+                'orders.confirm',
                 'orders.markPreparing',
                 'orders.markReady',
                 'orders.reject',
@@ -203,6 +216,8 @@ class RolePermissionSeeder extends Seeder
                 'menus.delete',
 
                 'orders.delete',
+
+                'notification.scope.branch',
             ]);
 
         // ── employee ─────────────────────────────────────────────────
@@ -216,12 +231,15 @@ class RolePermissionSeeder extends Seeder
                 'customers.scope.branch',
                 'orders.scope.branch',
                 'orders.write',
+                'orders.confirm',
                 'orders.markPreparing',
                 'orders.markReady',
                 'orders.reject',
                 'deliveries.scope.branch',
                 'menus.scope.branch',
                 'orders.delete',
+
+                'notification.scope.branch',
             ]);
 
         // ── driver ───────────────────────────────────────────────────
@@ -239,7 +257,8 @@ class RolePermissionSeeder extends Seeder
                 'deliveries.reject',
                 'deliveries.pickup',
                 'deliveries.deliver',
-                'deliveries.fail',       // driver can update their own delivery status
+                'deliveries.fail',
+                'notifications.scope.assigned',      // driver can update their own delivery status
             ]);
 
         // ── customer ─────────────────────────────────────────────────
@@ -250,12 +269,14 @@ class RolePermissionSeeder extends Seeder
                 'companies.scope.active',
                 'branches.scope.active',
                 'customers.scope.own',
+                'customers.payment',
                 'orders.scope.own',
                 'orders.write',             // customers place orders
                 'deliveries.scope.own',
                 'menus.scope.active_now',
                 'orders.delete',
                 'orders.cancel',
+                'notification.scope.own',
             ]);
     }
 }

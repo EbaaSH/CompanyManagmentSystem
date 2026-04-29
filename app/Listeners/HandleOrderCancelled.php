@@ -46,14 +46,35 @@ class HandleOrderCancelled
 
     private function processRefund($order, $amount)
     {
-        if ($order->payment) {
-            $order->payment->update([
+        $payment = $order->payment;
+
+        // No payment or not paid → nothing to refund
+        if (!$payment || $payment->payment_status !== 'paid') {
+            return;
+        }
+
+        try {
+            $refundService = app(\App\Services\StripePayment\StripeService::class);
+
+            $refund = $refundService->refund($payment, $amount);
+
+            // ✅ Update DB ONLY after success
+            $payment->update([
                 'payment_status' => 'refunded',
-                'amount' => $amount,
+                'refunded_amount' => $amount,
+                'refunded_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Refund failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+
+            // Optional: mark as refund_failed
+            $payment->update([
+                'payment_status' => 'failed',
             ]);
         }
-        // Actual refund logic (call payment gateway)
-        // PaymentService::refund($order->payment->transaction_reference, $amount);
     }
 
     private function notifyAllParties($order, $reason)

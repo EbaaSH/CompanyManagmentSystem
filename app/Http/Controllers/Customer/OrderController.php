@@ -24,10 +24,6 @@ class OrderController extends Controller
         $this->orderService = $orderService;
     }
 
-    /**
-     * Create/Place new order
-     * WORKFLOW: Validate → Create → Auto-confirm → Notify kitchen
-     */
     public function store(CreateOrderRequest $request)
     {
         try {
@@ -49,15 +45,11 @@ class OrderController extends Controller
         }
     }
 
-    /**
-     * Update pending order
-     * Only allowed in PENDING status
-     */
     public function update(UpdateOrderRequest $request, $id)
     {
         try {
             $order = Order::find($id);
-            if (! $order) {
+            if (!$order) {
                 return Response::Error([], 'Order not found', 404);
             }
             $this->authorize('update', $order);
@@ -78,15 +70,6 @@ class OrderController extends Controller
         }
     }
 
-    /**
-     * Cancel order
-     * Refund logic based on order status
-     * PENDING: 100% refund
-     * CONFIRMED: 100% refund
-     * PREPARING: 80% refund
-     * READY_FOR_PICKUP: 50% refund
-     * PICKED_UP+: No refund
-     */
     public function cancel(CancelOrderRequest $request, $id)
     {
         try {
@@ -94,7 +77,7 @@ class OrderController extends Controller
             $order = Order::query()
                 ->forUserViaPermission($user)
                 ->find($id);
-            if (! $order) {
+            if (!$order) {
                 return Response::Error([], 'Order not found', 404);
             }
             $this->authorize('cancel', $order);
@@ -107,7 +90,7 @@ class OrderController extends Controller
                 'ready_for_pickup',
             ];
 
-            if (! in_array($status, $cancelableStatuses)) {
+            if (!in_array($status, $cancelableStatuses)) {
                 return Response::Error([], "Cannot cancel order in {$status} status");
             }
 

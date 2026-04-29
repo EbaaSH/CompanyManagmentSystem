@@ -29,7 +29,9 @@ class PlaceOrderService
      */
     private $confirmAction;
 
-    public function __construct(ConfirmOrder $confirmAction) {}
+    public function __construct(ConfirmOrder $confirmAction)
+    {
+    }
 
     public function confirmActionFun($order)
     {
@@ -94,7 +96,9 @@ class PlaceOrderService
         // AUTO-CONFIRM if validation passes
         $this->confirmAction = $this->confirmActionFun($order);
 
-        $this->confirmAction->autoConfirm();
+        if ($request->payment_method == 'cash') {
+            $this->confirmAction->autoConfirm();
+        }
 
         if ($order->status != 'confirmed') {
             event(new OrderPlaced($order));
@@ -116,7 +120,7 @@ class PlaceOrderService
     {
         $menuItem = MenuItem::findOrFail($itemData['menu_item_id']);
 
-        if (! $menuItem->is_available) {
+        if (!$menuItem->is_available) {
             throw ValidationException::withMessages([
                 'items' => "Item '{$menuItem->name}' is no longer available",
             ]);
@@ -135,12 +139,12 @@ class PlaceOrderService
         ]);
 
         // Process options
-        if (! empty($itemData['options'])) {
+        if (!empty($itemData['options'])) {
             foreach ($itemData['options'] as $optionId) {
                 $option = ItemOption::with('optionGroup')->where('is_available', true)
                     ->find($optionId['option_id']);
                 // dd($option);
-                if (! $option) {
+                if (!$option) {
                     throw ValidationException::withMessages([
                         'options' => 'Invalid option selected',
                     ]);
@@ -201,7 +205,7 @@ class PlaceOrderService
             'payment_method' => $paymentMethod,
             'payment_status' => 'pending',
             'amount' => $amount,
-            'transaction_reference' => 'TXN-'.uniqid(),
+            'transaction_reference' => 'TXN-' . uniqid(),
         ]);
     }
 
@@ -218,7 +222,7 @@ class PlaceOrderService
         $branch = $order->branch;
 
         // Check branch is open
-        if (! $this->isBranchOpen($branch)) {
+        if (!$this->isBranchOpen($branch)) {
             throw ValidationException::withMessages([
                 'branch' => 'Branch is currently closed. Please try again later.',
             ]);
@@ -226,7 +230,7 @@ class PlaceOrderService
 
         // Check payment method
         $validMethods = ['cash', 'card', 'wallet'];
-        if (! in_array($order->payment->payment_method, $validMethods)) {
+        if (!in_array($order->payment->payment_method, $validMethods)) {
             throw ValidationException::withMessages([
                 'payment_method' => 'Invalid payment method',
             ]);
@@ -261,7 +265,7 @@ class PlaceOrderService
                 })
                 ->first();
 
-            if (! $hours) {
+            if (!$hours) {
                 return false;
             }
 
@@ -278,7 +282,7 @@ class PlaceOrderService
      */
     private function generateOrderNumber(): string
     {
-        return 'ORD-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -6));
+        return 'ORD-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
     }
 
     /**
@@ -355,7 +359,7 @@ class PlaceOrderService
             ->forUserViaPermission($user)
             ->find($id);
 
-        if (! $order) {
+        if (!$order) {
             return [
                 'data' => null,
                 'message' => 'order not found',
@@ -363,11 +367,18 @@ class PlaceOrderService
             ];
         }
 
-        if (! in_array($order->status, ['pending', 'confirmed'])) {
+        if (!in_array($order->status, ['pending'])) {
             return [
                 'data' => null,
-                'message' => 'Orders can only be updated brafore preparing status',
+                'message' => 'Orders can only be updated in pending status',
                 'code' => 400,
+            ];
+        }
+        if ($order->payment->payment_status !== 'pending') {
+            return [
+                'data' => null,
+                'message' => 'Orders can only be updated when the payment is pending',
+                400
             ];
         }
 
@@ -410,14 +421,14 @@ class PlaceOrderService
             'amount' => $order->orderInvoice->total,
         ]);
 
-        // Record history
-        OrderStatusHistory::create([
-            'order_id' => $order->id,
-            'old_status' => $order->status,
-            'new_status' => $order->status,
-            'changed_by_user_id' => auth()->id(),
-            'reason' => 'Order updated by customer',
-        ]);
+        // // Record history
+        // OrderStatusHistory::create([
+        //     'order_id' => $order->id,
+        //     'old_status' => $order->status,
+        //     'new_status' => $order->status,
+        //     'changed_by_user_id' => auth()->id(),
+        //     'reason' => 'Order updated by customer',
+        // ]);
 
         return [
             'data' => $this->formatOrderResponse($order, $result['distance_km']),

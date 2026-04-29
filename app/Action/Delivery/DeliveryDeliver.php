@@ -32,7 +32,7 @@ class DeliveryDeliver
     {
         $payment = $this->delivery->order->payment ?? Payment::where('order_id', $this->delivery->order_id)->first();
 
-        if ($payment && $payment->payment_status === 'pending') {
+        if ($payment && $payment->payment_status === 'pending' && $payment->payment_method === 'cash') {
             $payment->update([
                 'payment_status' => 'paid',
                 'paid_at' => now(),

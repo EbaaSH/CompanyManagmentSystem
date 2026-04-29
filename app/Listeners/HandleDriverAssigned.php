@@ -15,10 +15,7 @@ class HandleDriverAssigned
         //
     }
 
-    /**
-     * Handle the event.
-     * WORKFLOW: Driver assigned → Notify driver with order details
-     */
+
     public function handle(DriverAssigned $event): void
     {
         $delivery = $event->delivery;

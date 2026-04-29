@@ -39,5 +39,10 @@ return [
         'url' => env('TRACCER_SMS_URL'),
         'key' => env('TRACCER_SMS_API_KEY'),
     ],
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET'),
+        'key' => env('STRIPE_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
 
 ];

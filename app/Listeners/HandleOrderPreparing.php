@@ -23,13 +23,11 @@ class HandleOrderPreparing
     {
         $order = $event->order;
 
-        // Calculate estimated prep time
         $estimatedPrepTime = $order->orderItems()
             ->with('menuItem')
             ->get()
             ->max(fn ($item) => $item->menuItem->preparation_time_minutes ?? 0);
 
-        // Notify customer that order is being prepared
         Notification::create([
             'user_id' => $order->customer->user_id,
             'type' => 'order.preparing',
@@ -37,7 +35,5 @@ class HandleOrderPreparing
             'message' => "Estimated ready time: {$estimatedPrepTime} minutes",
         ]);
 
-        // Update kitchen display system
-        // broadcast(new OrderToKitchenDisplay($order));
     }
 }

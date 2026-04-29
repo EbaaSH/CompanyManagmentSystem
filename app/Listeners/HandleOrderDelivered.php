@@ -20,7 +20,6 @@ class HandleOrderDelivered
     {
         $order = $event->order;
 
-        // Emit payment processed event (if not already done in Delivery model)
         if ($order->payment && $order->payment->payment_status === 'pending') {
             event(new PaymentProcessed($order->payment));
         }
