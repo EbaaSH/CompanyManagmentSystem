@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
+
 class Notification extends Model
 {
     use HasFactory;
@@ -21,12 +22,12 @@ class Notification extends Model
         return $query->where(function ($q) use ($user) {
 
             // 1. SUPER ADMIN → everything
-            if ($user->can('notifications.scope.all')) {
+            if ($user->can('notification.scope.all')) {
                 return;
             }
 
             // 2. COMPANY MANAGER → all users in same company
-            if ($user->can('notifications.scope.company')) {
+            if ($user->can('notification.scope.company')) {
                 $q->orWhereHas('user', function ($u) use ($user) {
                     $u->whereHas('ownedCompany', function ($c) use ($user) {
                         $c->where('id', $user->resolveCompanyId());
@@ -35,7 +36,7 @@ class Notification extends Model
             }
 
             // 3. BRANCH MANAGER → all users in same branch
-            if ($user->can('notifications.scope.branch')) {
+            if ($user->can('notification.scope.branch')) {
                 $q->orWhereHas('user', function ($u) use ($user) {
                     $u->whereHas('ownedBranch', function ($b) use ($user) {
                         $b->where('id', $user->resolveBranchId());
@@ -46,7 +47,7 @@ class Notification extends Model
             // 4. EMPLOYEE / DRIVER / CUSTOMER → only own notifications
             if (
                 $user->can('notifications.scope.assigned') ||
-                $user->can('notifications.scope.own')
+                $user->can('notification.scope.own')
             ) {
                 $q->orWhere('user_id', $user->id);
             }

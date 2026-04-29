@@ -43,7 +43,4 @@ class HandleOrderDelivered
             $order->delivery->driver->update(['availability_status' => 'available']);
         }
     }
-
-
-
 }

@@ -6,6 +6,7 @@ use App\Events\DeliveryFailed;
 use App\Jobs\AssignDriverJob;
 use App\Models\Delivery\Delivery;
 use App\Models\Delivery\DeliveryStatusHistory;
+use App\Services\StripePayment\StripeService;
 
 class DeliveryFail
 {
@@ -40,14 +41,40 @@ class DeliveryFail
 
             // Notify customer of options (refund, reschedule, pickup)
             event(new DeliveryFailed($this->delivery, $reason));
+            $payment = $this->delivery->order->payment;
+            if ($payment->payment_status == 'pending') {
+                $payment->update(['payment_status' => 'failed']);
+            } elseif ($payment->payment_status == 'paid') {
+                try {
+                    $refundService = app(StripeService::class);
+                    $amount = $this->delivery->order->orderInvoice->total;
+                    $refund = $refundService->refund($payment, $amount);
+
+                    $payment->update([
+                        'payment_status' => 'refunded',
+                        'refunded_amount' => $amount,
+                        'refunded_at' => now(),
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Refund failed', [
+                        'order_id' => $this->delivery->order->id,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    // Optional: mark as refund_failed
+                    $payment->update([
+                        'payment_status' => 'failed',
+                    ]);
+                }
+            }
 
             return $this->delivery;
         }
 
         // Schedule retry
         $retryTime = match ($this->delivery->retry_attempt) {
-            1 => now()->addMinutes(2),
-            2 => now()->addMinutes(5),
+            1 => now()->addMinutes(1),
+            2 => now()->addMinutes(2),
             default => now()->addMinutes(10),
         };
         $driver = $this->delivery->driver;
@@ -63,7 +90,6 @@ class DeliveryFail
         // Fire event
         event(new DeliveryFailed($this->delivery, $reason));
 
-        // Queue retry job for scheduled time
         AssignDriverJob::dispatch($this->delivery->order)->delay($retryTime);
         $driver->setAvailability('available');
 

@@ -6,7 +6,6 @@ use App\Events\DriverAssigned;
 use App\Models\Driver\DriverProfile;
 use App\Models\Notification;
 use App\Models\Order\Order;
-use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -21,9 +20,7 @@ class AssignDriverJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(private Order $order)
-    {
-    }
+    public function __construct(private Order $order) {}
 
     public $tries = 20;
 
@@ -33,18 +30,26 @@ class AssignDriverJob implements ShouldQueue
 
     public function handle()
     {
-        if ($this->order->status !== 'ready_for_pickup') {
-            return;
-        }
+        // if ($this->order->status !== 'ready_for_pickup') {
+        //     return;
+        // }
 
-        if ($this->order->delivery->delivery_status !== 'unassigned' && $this->order->delivery->delivery_status !== 'rejected') {
-            return;
-        }
-
-
+        // if ($this->order->delivery->delivery_status !== 'unassigned' && $this->order->delivery->delivery_status !== 'rejected') {
+        //     return;
+        // }
+        // \Log::info('reach the first', [
+        //     'order_id' => $this->order->id,
+        // ]);
         $driver = $this->findBestDriver();
-
+        // \Log::info('Driver', [
+        //     'order_id' => $this->order->id,
+        //     'driver' => $driver,
+        // ]);
         if ($driver) {
+            // \Log::info('Driver driver find', [
+            //     'order_id' => $this->order->id,
+            //     'driver' => $driver,
+            // ]);
             $this->order->update(['driver_id' => $driver->id]);
             $this->assignDriver($driver);
         } else {
@@ -82,7 +87,6 @@ class AssignDriverJob implements ShouldQueue
 
             $driver->setAvailability('busy');
 
-
             $this->order->delivery->recordStatusHistory(
                 $this->order->delivery->delivery_status,
                 'assigned',
@@ -91,7 +95,6 @@ class AssignDriverJob implements ShouldQueue
             );
 
             DB::commit();
-
 
             event(new DriverAssigned($this->order->delivery));
 
@@ -109,10 +112,10 @@ class AssignDriverJob implements ShouldQueue
             throw $e;
         }
     }
+
     private function notifyAdminNoDriverAvailable()
     {
         $branchManager = $this->order->branch->manager;
-
 
         Notification::create([
             'user_id' => $branchManager->id,

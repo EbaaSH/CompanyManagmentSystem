@@ -49,7 +49,7 @@ class OrderController extends Controller
     {
         try {
             $order = Order::find($id);
-            if (!$order) {
+            if (! $order) {
                 return Response::Error([], 'Order not found', 404);
             }
             $this->authorize('update', $order);
@@ -77,7 +77,7 @@ class OrderController extends Controller
             $order = Order::query()
                 ->forUserViaPermission($user)
                 ->find($id);
-            if (!$order) {
+            if (! $order) {
                 return Response::Error([], 'Order not found', 404);
             }
             $this->authorize('cancel', $order);
@@ -90,7 +90,7 @@ class OrderController extends Controller
                 'ready_for_pickup',
             ];
 
-            if (!in_array($status, $cancelableStatuses)) {
+            if (! in_array($status, $cancelableStatuses)) {
                 return Response::Error([], "Cannot cancel order in {$status} status");
             }
 

@@ -31,10 +31,6 @@ class DeliveryController extends Controller
 
     private $failDelivery;
 
-    /**
-     * Accept delivery assignment
-     * Driver accepts the delivery order
-     */
     public function accept($deliveryId)
     {
         try {
@@ -75,10 +71,6 @@ class DeliveryController extends Controller
         }
     }
 
-    /**
-     * Reject delivery assignment
-     * Driver rejects the delivery (triggers auto-reassignment)
-     */
     public function reject(RejectDeliveryRequest $request, $deliveryId)
     {
         try {
@@ -115,10 +107,6 @@ class DeliveryController extends Controller
         }
     }
 
-    /**
-     * Pickup order from branch
-     * Driver picks up order from branch
-     */
     public function pickup($deliveryId)
     {
         try {
@@ -159,10 +147,6 @@ class DeliveryController extends Controller
         }
     }
 
-    /**
-     * Deliver order to customer
-     * Driver delivers order to customer and provides proof
-     */
     public function deliver(DeliverOrderRequest $request, $deliveryId)
     {
         try {
@@ -214,10 +198,6 @@ class DeliveryController extends Controller
         }
     }
 
-    /**
-     * Mark delivery as failed
-     * Driver marks delivery as failed (triggers retry logic)
-     */
     public function fail(FailDeliveryRequest $request, $deliveryId)
     {
         try {
@@ -261,28 +241,4 @@ class DeliveryController extends Controller
             return Response::Error([], $th->getMessage());
         }
     }
-
-    /**
-     * Get delivery details
-     */
-    // public function show($deliveryId)
-    // {
-    //     try {
-    //         $delivery = Delivery::with([
-    //             'order.orderItems.menuItem',
-    //             'order.customer.user',
-    //             'order.deliveryAddress',
-    //             'order.branch',
-    //             'driver.user',
-    //             'statusHistories',
-    //         ])->findOrFail($deliveryId);
-
-    //         $this->authorize('view', $delivery);
-
-    //         return Response::Success($delivery, 'Delivery details retrieved', 200);
-
-    //     } catch (Throwable $th) {
-    //         return Response::Error([], $th->getMessage());
-    //     }
-    // }
 }

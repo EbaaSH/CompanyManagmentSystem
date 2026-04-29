@@ -36,6 +36,7 @@ class DeliveryPickup
 
         $this->recordStatusHistory('accepted', 'picked_up', $userId);
         $this->delivery->order->orderStatus->update(['picked_up_at' => now()]);
+        $this->delivery->order->recordStatusHistory('accepted', 'picked_up', $userId);
         $this->delivery->order->update(['status' => 'picked_up']);
         // Fire event
         event(new OrderPickedUp($this->delivery->order));
