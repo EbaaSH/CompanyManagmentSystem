@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AIRecommendationController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Auth\ProfileController;
@@ -198,7 +199,6 @@ Route::middleware(['auth:api', TwoFactorMiddleware::class])
         });
     });
 
-
 Route::middleware(['auth:api', TwoFactorMiddleware::class])
     ->group(function () {
         Route::prefix('notification')->group(function () {
@@ -207,4 +207,7 @@ Route::middleware(['auth:api', TwoFactorMiddleware::class])
         });
     });
 
-
+Route::middleware(['auth:api', TwoFactorMiddleware::class])->prefix('ai/recommendations')->group(function () {
+    Route::post('/customer', [AIRecommendationController::class, 'customer']);
+    Route::post('/cart', [AIRecommendationController::class, 'cart']);
+});

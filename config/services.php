@@ -44,5 +44,7 @@ return [
         'key' => env('STRIPE_KEY'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
-
+    'ai_recommendation' => [
+        'url' => env('AI_RECOMMENDATION_URL', 'http://127.0.0.1:8001'),
+    ],
 ];
