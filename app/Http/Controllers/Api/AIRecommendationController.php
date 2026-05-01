@@ -20,12 +20,11 @@ class AIRecommendationController extends Controller
     {
         try {
             $data = $request->validate([
-                'customer_id' => ['required', 'integer'],
+                // 'customer_id' => ['required', 'integer'],
                 'top_k' => ['nullable', 'integer', 'min:1', 'max:20'],
             ]);
 
             $result = $this->recommendationService->recommendForCustomer(
-                customerId: $data['customer_id'],
                 topK: $data['top_k'] ?? 5
             );
             if ($result['code'] !== 200) {

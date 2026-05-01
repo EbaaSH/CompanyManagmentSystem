@@ -12,10 +12,10 @@ class RecommendationService
         return rtrim(config('services.ai_recommendation.url'), '/');
     }
 
-    public function recommendForCustomer(int $customerId, int $topK = 5): array
+    public function recommendForCustomer(int $topK = 5): array
     {
-        // $user = auth()->user();
-        // $customerId = $user->customerProfile->id;
+        $user = auth()->user();
+        $customerId = $user->customerProfile->id;
         $response = Http::timeout(10)->post($this->baseUrl().'/recommend/customer', [
             'customer_id' => $customerId,
             'top_k' => $topK,
