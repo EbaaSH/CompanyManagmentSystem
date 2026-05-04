@@ -54,6 +54,10 @@ class DeliveryPolicy
     }
 
     // TECHNIQUE 2
+    public function assign(User $user, Delivery $delivery)
+    {
+        return $user->can('deliveries.write');
+    }
     public function accept(User $user, Delivery $delivery)
     {
         return $user->can('deliveries.accept');

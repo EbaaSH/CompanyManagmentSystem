@@ -96,6 +96,7 @@ class RolePermissionSeeder extends Seeder
             'deliveries.scope.branch',
             'deliveries.scope.own',
             'deliveries.write',
+            'deliveries.assign',
             'deliveries.accept',
             'deliveries.reject',
             'deliveries.pickup',
@@ -178,6 +179,7 @@ class RolePermissionSeeder extends Seeder
 
                 'deliveries.scope.company',
                 'deliveries.write',
+                'deliveries.assign',
 
                 'menus.scope.company',
                 // 'menus.write',
@@ -209,6 +211,7 @@ class RolePermissionSeeder extends Seeder
 
                 'deliveries.scope.branch',
                 'deliveries.write',
+                'deliveries.assign',
 
                 'menus.scope.branch',
                 'menus.write',

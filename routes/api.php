@@ -167,6 +167,12 @@ Route::middleware(['auth:api', TwoFactorMiddleware::class])
         });
     });
 
+Route::middleware(['auth:api', TwoFactorMiddleware::class])->group(function () {
+    Route::prefix('manager/deliveries')->group(function () {
+        Route::patch('/{deliveryId}/driver/{driverId}/assign', [DeliveryController::class, 'assign']);
+    });
+});
+
 // ===== DRIVER DELIVERY ROUTES =====
 Route::middleware(['auth:api', TwoFactorMiddleware::class])->group(function () {
     Route::prefix('driver/deliveries')->group(function () {
