@@ -7,13 +7,28 @@ echo "PHP version: $(php -v | head -1)"
 CERT_PATH="/var/www/html/storage/certs/aiven-ca.pem"
 
 # ─────────────────────────────────────
-# 1. Permissions
+# 1. Permissions — fix www-data ownership on all storage
 # ─────────────────────────────────────
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+echo "Setting permissions..."
+mkdir -p /var/www/html/storage/logs
+mkdir -p /var/www/html/storage/framework/cache/data
+mkdir -p /var/www/html/storage/framework/sessions
+mkdir -p /var/www/html/storage/framework/views
+mkdir -p /var/www/html/storage/app/public
+mkdir -p /var/www/html/bootstrap/cache
+
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Explicitly fix the log file
+touch /var/www/html/storage/logs/laravel.log
+chown www-data:www-data /var/www/html/storage/logs/laravel.log
+chmod 664 /var/www/html/storage/logs/laravel.log
+
+echo "✅ Permissions set"
 
 # ─────────────────────────────────────
-# 2. DB connection (suppress deprecation warnings for PHP 8.5)
+# 2. DB connection
 # ─────────────────────────────────────
 echo "Testing DB connection..."
 MAX_TRIES=10
@@ -48,10 +63,9 @@ echo "✅ Migrations done"
 # ─────────────────────────────────────
 echo "Checking seed status..."
 
-# Write the check script to a file to avoid shell/PHP quoting issues
 cat > /tmp/check_seed.php << 'PHPEOF'
 <?php
-error_reporting(E_ERROR); // suppress deprecation warnings
+error_reporting(E_ERROR);
 $cert = getenv('MYSQL_ATTR_SSL_CA');
 try {
     $pdo = new PDO(
@@ -76,7 +90,6 @@ try {
 }
 PHPEOF
 
-# Write the flag-saving script to a file too
 cat > /tmp/save_seed_flag.php << 'PHPEOF'
 <?php
 error_reporting(E_ERROR);
@@ -106,16 +119,15 @@ if [ "$SEED_STATUS" = "NO" ]; then
     echo "Running seeders for the first time..."
     if php artisan db:seed --force; then
         echo "✅ Seeders ran successfully"
-        php /tmp/save_seed_flag.php 2>/dev/null && echo "✅ Seed flag saved — won't run again on next deploy" || echo "⚠️  Could not save seed flag"
+        php /tmp/save_seed_flag.php 2>/dev/null && echo "✅ Seed flag saved" || echo "⚠️  Could not save seed flag"
     else
         echo "❌ Seeders FAILED — check output above"
     fi
 elif [ "$SEED_STATUS" = "YES" ]; then
     echo "✅ Already seeded — skipping"
-    echo "   (To re-seed: run DELETE FROM seed_flags WHERE name='seeded_v1' in Aiven Query Editor)"
+    echo "   (To re-seed: DELETE FROM seed_flags WHERE name='seeded_v1' in Aiven Query Editor)"
 else
     echo "❌ Seed check error: $(cat /tmp/seed_err.txt 2>/dev/null)"
-    echo "   Skipping seeder to be safe"
 fi
 
 # ─────────────────────────────────────

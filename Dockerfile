@@ -1,4 +1,4 @@
-FROM php:8.5-apache
+FROM php:8.3-apache
 
 WORKDIR /var/www/html
 
@@ -35,24 +35,36 @@ RUN a2enmod rewrite headers
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy app files
 COPY . .
 
-# Apache config
 COPY apache.conf /etc/apache2/sites-available/000-default.conf
 
-# Install dependencies
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-scripts
 
-# Set permissions
+# Create all required storage directories
+RUN mkdir -p storage/logs \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/app/public \
+    bootstrap/cache
+
+# Pre-create the log file so it always exists with correct owner
+RUN touch storage/logs/laravel.log
+
+# Set correct ownership and permissions for www-data (Apache user)
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 storage bootstrap/cache
+    && chmod -R 775 storage bootstrap/cache \
+    && chmod 664 storage/logs/laravel.log
 
 RUN chmod +x docker-entrypoint.sh
+
+# Suppress PHP 8.5 deprecation warnings globally
+RUN echo "error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT" >> /usr/local/etc/php/php.ini
 
 EXPOSE 80
 
