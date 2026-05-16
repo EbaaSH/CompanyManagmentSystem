@@ -10,7 +10,7 @@ use Kreait\Firebase\Messaging\CloudMessage;
 
 use Kreait\Firebase\Messaging\Notification;
 
-class FcmService
+class FCMService
 {
     protected $messaging;
 
