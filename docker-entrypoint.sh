@@ -38,70 +38,75 @@ echo "✅ DB connected"
 # ─────────────────────────────────────
 # 3. Migrations
 # ─────────────────────────────────────
+echo "Running migrations..."
 php artisan migrate --force || { echo "❌ Migrations failed"; exit 1; }
 echo "✅ Migrations done"
 
 # ─────────────────────────────────────
-# 4. Laravel boot check — THIS SHOWS THE 500 CAUSE
+# 4. Seeders — runs ONCE using a flag table
+#    If you want to re-seed, delete the row:
+#    DELETE FROM seed_flags WHERE name='seeded_v1';
 # ─────────────────────────────────────
-echo ""
-echo "=== LARAVEL BOOT DIAGNOSTICS ==="
+echo "Checking seed status..."
 
-echo "-- php artisan about --"
-php artisan about 2>&1 || true
+ALREADY_SEEDED=$(php -r "
+    try {
+        \$pdo = new PDO(
+            'mysql:host=${DB_HOST};port=${DB_PORT};dbname=${DB_DATABASE}',
+            '${DB_USERNAME}', '${DB_PASSWORD}',
+            [PDO::MYSQL_ATTR_SSL_CA => '${CERT_PATH}', PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false]
+        );
+        \$pdo->exec(\"CREATE TABLE IF NOT EXISTS seed_flags (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )\");
+        \$row = \$pdo->query(\"SELECT id FROM seed_flags WHERE name='seeded_v1'\")->fetch();
+        echo \$row ? 'YES' : 'NO';
+    } catch(Exception \$e) {
+        echo 'ERROR: ' . \$e->getMessage();
+    }
+" 2>&1)
 
-echo ""
-echo "-- Clearing bootstrap/cache --"
-rm -f /var/www/html/bootstrap/cache/config.php
-rm -f /var/www/html/bootstrap/cache/routes-v7.php
-rm -f /var/www/html/bootstrap/cache/services.php
-rm -f /var/www/html/bootstrap/cache/packages.php
+echo "  Seed flag check: $ALREADY_SEEDED"
 
-echo ""
-echo "-- php artisan config:cache (errors shown here) --"
-php artisan config:cache 2>&1 || true
-
-echo ""
-echo "-- php artisan route:cache (errors shown here) --"
-php artisan route:cache 2>&1 || true
-
-echo ""
-echo "-- php artisan view:cache (errors shown here) --"
-php artisan view:cache 2>&1 || true
-
-echo ""
-echo "-- Checking storage/logs/laravel.log --"
-LOG_FILE="/var/www/html/storage/logs/laravel.log"
-if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
-    echo "Laravel log found — last 60 lines:"
-    tail -60 "$LOG_FILE"
+if [ "$ALREADY_SEEDED" = "NO" ]; then
+    echo "Running seeders for the first time..."
+    if php artisan db:seed --force; then
+        echo "✅ Seeders ran successfully"
+        # Mark as seeded so it won't run again on next deploy
+        php -r "
+            \$pdo = new PDO(
+                'mysql:host=${DB_HOST};port=${DB_PORT};dbname=${DB_DATABASE}',
+                '${DB_USERNAME}', '${DB_PASSWORD}',
+                [PDO::MYSQL_ATTR_SSL_CA => '${CERT_PATH}', PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false]
+            );
+            \$pdo->exec(\"INSERT IGNORE INTO seed_flags (name) VALUES ('seeded_v1')\");
+        " 2>/dev/null || true
+        echo "✅ Seed flag saved — seeds will NOT run again on next deploy"
+    else
+        echo "❌ Seeders FAILED — check output above"
+        echo "   App will still start, but data may be missing"
+    fi
+elif [ "$ALREADY_SEEDED" = "YES" ]; then
+    echo "✅ Already seeded — skipping (delete seed_flags row to re-seed)"
 else
-    echo "(log file empty or not yet created)"
+    echo "⚠️  Could not check seed flag: $ALREADY_SEEDED"
+    echo "   Skipping seeder to be safe"
 fi
 
-echo ""
-echo "-- Simulating a request to / --"
-php -r "
-    \$_SERVER['HTTP_HOST']   = 'localhost';
-    \$_SERVER['REQUEST_URI'] = '/';
-    \$_SERVER['REQUEST_METHOD'] = 'GET';
-    define('LARAVEL_START', microtime(true));
-    try {
-        require '/var/www/html/public/index.php';
-    } catch (\Throwable \$e) {
-        echo 'BOOT ERROR: ' . \$e->getMessage() . PHP_EOL;
-        echo 'File: ' . \$e->getFile() . ':' . \$e->getLine() . PHP_EOL;
-        echo \$e->getTraceAsString();
-    }
-" 2>&1 | head -80 || true
-
-echo ""
-echo "=== END DIAGNOSTICS ==="
-
 # ─────────────────────────────────────
-# 5. Storage link
+# 5. Cache
 # ─────────────────────────────────────
+echo "Rebuilding caches..."
+php artisan config:clear  || true
+php artisan route:clear   || true
+php artisan view:clear    || true
+php artisan config:cache  || true
+php artisan route:cache   || true
+php artisan view:cache    || true
 php artisan storage:link --force 2>/dev/null || true
+echo "✅ All caches rebuilt"
 
 # ─────────────────────────────────────
 # 6. Apache
