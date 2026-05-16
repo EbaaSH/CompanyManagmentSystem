@@ -1,4 +1,4 @@
-FROM php:8.2-apache
+FROM php:8.5-apache
 
 WORKDIR /var/www/html
 
@@ -48,6 +48,10 @@ RUN php artisan storage:link || true
 
 RUN php artisan config:clear || true
 RUN php artisan cache:clear || true
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 80
 
