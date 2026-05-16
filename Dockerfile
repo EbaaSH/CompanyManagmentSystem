@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libicu-dev \
-    libpq-dev \
     ca-certificates
 
 RUN docker-php-ext-install \
@@ -22,8 +21,6 @@ RUN docker-php-ext-install \
     pdo_mysql \
     mysqli \
     mbstring \
-    exif \
-    pcntl \
     bcmath \
     zip \
     intl
@@ -35,23 +32,19 @@ RUN a2enmod rewrite headers
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-COPY apache.conf /etc/apache2/sites-available/000-default.conf
-
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+COPY apache.conf /etc/apache2/sites-available/000-default.conf
 
-RUN chown -R www-data:www-data /var/www/html && \
-    chmod -R 775 storage bootstrap/cache
+RUN composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction \
+    --no-scripts
 
-RUN php artisan storage:link || true
+RUN chmod -R 775 storage bootstrap/cache
 
-RUN php artisan config:clear || true
-RUN php artisan cache:clear || true
-
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x docker-entrypoint.sh
 
 EXPOSE 80
 
