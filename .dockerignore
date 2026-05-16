@@ -1,12 +1,10 @@
 node_modules
-npm-debug.log
+vendor
 .git
 .gitignore
 .env
 .vscode
 .idea
-*.swp
-*.swo
-*~
-storage/logs/*
+storage/logs
 bootstrap/cache/*
+docker-compose.yml
