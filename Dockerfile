@@ -1,4 +1,4 @@
-FROM php:8.3-apache
+FROM php:8.2-apache
 
 WORKDIR /var/www/html
 
@@ -51,4 +51,4 @@ RUN php artisan cache:clear || true
 
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+CMD ["sh", "docker-entrypoint.sh"]
