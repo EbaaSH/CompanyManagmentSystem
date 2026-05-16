@@ -13,12 +13,12 @@ chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 
 # ─────────────────────────────────────
-# 2. DB connection
+# 2. DB connection (suppress deprecation warnings for PHP 8.5)
 # ─────────────────────────────────────
 echo "Testing DB connection..."
 MAX_TRIES=10
 TRIES=0
-until php -r "
+until php -d error_reporting=E_ERROR -r "
     try {
         new PDO(
             'mysql:host=${DB_HOST};port=${DB_PORT};dbname=${DB_DATABASE}',
@@ -44,54 +44,77 @@ echo "✅ Migrations done"
 
 # ─────────────────────────────────────
 # 4. Seeders — runs ONCE using a flag table
-#    If you want to re-seed, delete the row:
-#    DELETE FROM seed_flags WHERE name='seeded_v1';
+#    To re-seed: DELETE FROM seed_flags WHERE name='seeded_v1';
 # ─────────────────────────────────────
 echo "Checking seed status..."
 
-ALREADY_SEEDED=$(php -r "
-    try {
-        \$pdo = new PDO(
-            'mysql:host=${DB_HOST};port=${DB_PORT};dbname=${DB_DATABASE}',
-            '${DB_USERNAME}', '${DB_PASSWORD}',
-            [PDO::MYSQL_ATTR_SSL_CA => '${CERT_PATH}', PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false]
-        );
-        \$pdo->exec(\"CREATE TABLE IF NOT EXISTS seed_flags (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(255) UNIQUE NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )\");
-        \$row = \$pdo->query(\"SELECT id FROM seed_flags WHERE name='seeded_v1'\")->fetch();
-        echo \$row ? 'YES' : 'NO';
-    } catch(Exception \$e) {
-        echo 'ERROR: ' . \$e->getMessage();
-    }
-" 2>&1)
+# Write the check script to a file to avoid shell/PHP quoting issues
+cat > /tmp/check_seed.php << 'PHPEOF'
+<?php
+error_reporting(E_ERROR); // suppress deprecation warnings
+$cert = getenv('MYSQL_ATTR_SSL_CA');
+try {
+    $pdo = new PDO(
+        'mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'),
+        getenv('DB_USERNAME'),
+        getenv('DB_PASSWORD'),
+        [
+            PDO::MYSQL_ATTR_SSL_CA => $cert,
+            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+        ]
+    );
+    $pdo->exec("CREATE TABLE IF NOT EXISTS seed_flags (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    $row = $pdo->query("SELECT id FROM seed_flags WHERE name='seeded_v1'")->fetch();
+    echo $row ? 'YES' : 'NO';
+} catch (Exception $e) {
+    fwrite(STDERR, 'ERROR: ' . $e->getMessage() . PHP_EOL);
+    exit(1);
+}
+PHPEOF
 
-echo "  Seed flag check: $ALREADY_SEEDED"
+# Write the flag-saving script to a file too
+cat > /tmp/save_seed_flag.php << 'PHPEOF'
+<?php
+error_reporting(E_ERROR);
+$cert = getenv('MYSQL_ATTR_SSL_CA');
+try {
+    $pdo = new PDO(
+        'mysql:host=' . getenv('DB_HOST') . ';port=' . getenv('DB_PORT') . ';dbname=' . getenv('DB_DATABASE'),
+        getenv('DB_USERNAME'),
+        getenv('DB_PASSWORD'),
+        [
+            PDO::MYSQL_ATTR_SSL_CA => $cert,
+            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+        ]
+    );
+    $pdo->exec("INSERT IGNORE INTO seed_flags (name) VALUES ('seeded_v1')");
+    echo 'FLAG_SAVED';
+} catch (Exception $e) {
+    fwrite(STDERR, 'ERROR: ' . $e->getMessage() . PHP_EOL);
+    exit(1);
+}
+PHPEOF
 
-if [ "$ALREADY_SEEDED" = "NO" ]; then
+SEED_STATUS=$(php /tmp/check_seed.php 2>/tmp/seed_err.txt)
+echo "  Seed flag: $SEED_STATUS"
+
+if [ "$SEED_STATUS" = "NO" ]; then
     echo "Running seeders for the first time..."
     if php artisan db:seed --force; then
         echo "✅ Seeders ran successfully"
-        # Mark as seeded so it won't run again on next deploy
-        php -r "
-            \$pdo = new PDO(
-                'mysql:host=${DB_HOST};port=${DB_PORT};dbname=${DB_DATABASE}',
-                '${DB_USERNAME}', '${DB_PASSWORD}',
-                [PDO::MYSQL_ATTR_SSL_CA => '${CERT_PATH}', PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false]
-            );
-            \$pdo->exec(\"INSERT IGNORE INTO seed_flags (name) VALUES ('seeded_v1')\");
-        " 2>/dev/null || true
-        echo "✅ Seed flag saved — seeds will NOT run again on next deploy"
+        php /tmp/save_seed_flag.php 2>/dev/null && echo "✅ Seed flag saved — won't run again on next deploy" || echo "⚠️  Could not save seed flag"
     else
         echo "❌ Seeders FAILED — check output above"
-        echo "   App will still start, but data may be missing"
     fi
-elif [ "$ALREADY_SEEDED" = "YES" ]; then
-    echo "✅ Already seeded — skipping (delete seed_flags row to re-seed)"
+elif [ "$SEED_STATUS" = "YES" ]; then
+    echo "✅ Already seeded — skipping"
+    echo "   (To re-seed: run DELETE FROM seed_flags WHERE name='seeded_v1' in Aiven Query Editor)"
 else
-    echo "⚠️  Could not check seed flag: $ALREADY_SEEDED"
+    echo "❌ Seed check error: $(cat /tmp/seed_err.txt 2>/dev/null)"
     echo "   Skipping seeder to be safe"
 fi
 
