@@ -14,7 +14,10 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libicu-dev \
-    ca-certificates
+    ca-certificates \
+    openssl \
+    default-mysql-client \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-install \
     pdo \
@@ -32,17 +35,22 @@ RUN a2enmod rewrite headers
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Copy app files
 COPY . .
 
+# Apache config
 COPY apache.conf /etc/apache2/sites-available/000-default.conf
 
+# Install dependencies
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-scripts
 
-RUN chmod -R 775 storage bootstrap/cache
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 storage bootstrap/cache
 
 RUN chmod +x docker-entrypoint.sh
 
